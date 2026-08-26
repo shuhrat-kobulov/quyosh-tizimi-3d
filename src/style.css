@@ -24,7 +24,7 @@ html, body {
 
 #scene { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
 
-/* ---------- Yuklanish ---------- */
+/* ---------- Loading screen ---------- */
 #loader {
   position: fixed; inset: 0; z-index: 50;
   display: grid; place-items: center;
@@ -54,13 +54,15 @@ html, body {
 .fatal p { line-height: 1.65; font-size: 13.5px; letter-spacing: .02em; }
 .loader-bar i { display: block; height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent-2), var(--accent)); transition: width .3s ease; }
 
-/* ---------- Sarlavha ---------- */
+/* ---------- Header ---------- */
 #topbar {
   position: fixed; top: 0; left: 0; right: 0; z-index: 20;
   display: flex; align-items: center; justify-content: space-between;
   padding: 18px 22px;
+  padding-top: max(18px, env(safe-area-inset-top));
   padding-left: max(22px, env(safe-area-inset-left));
   padding-right: max(22px, env(safe-area-inset-right));
+  gap: 14px;
   pointer-events: none;
 }
 .brand { display: flex; align-items: center; gap: 12px; }
@@ -72,8 +74,26 @@ html, body {
 .brand strong { display: block; font-size: 14px; letter-spacing: .22em; }
 .brand em { display: block; font-style: normal; font-size: 11px; color: var(--muted); letter-spacing: .1em; }
 .hint { font-size: 11.5px; color: var(--muted); letter-spacing: .04em; }
+.topbar-right { display: flex; align-items: center; gap: 14px; }
 
-/* ---------- Nomlar ---------- */
+/* #topbar is click-through so it never blocks the canvas; the switcher has to
+   opt back in or its buttons cannot be pressed. */
+.lang-switch {
+  display: flex; gap: 2px; padding: 3px;
+  border-radius: 20px; background: var(--glass);
+  border: 1px solid var(--stroke); backdrop-filter: blur(12px);
+  pointer-events: auto;
+}
+.lang-btn {
+  padding: 5px 10px; border-radius: 16px; cursor: pointer;
+  font-family: var(--font); font-size: 10.5px; font-weight: 500; letter-spacing: .12em;
+  color: var(--muted); background: transparent; border: 0;
+  transition: color .2s, background .2s;
+}
+.lang-btn:hover { color: #fff; background: rgba(140, 165, 235, .12); }
+.lang-btn.active { color: #06070f; background: var(--accent); font-weight: 700; }
+
+/* ---------- Name labels ---------- */
 #labels { position: fixed; inset: 0; z-index: 10; pointer-events: none; }
 .label {
   position: absolute; transform: translate(-50%, -50%);
@@ -88,7 +108,7 @@ html, body {
 .label:hover, .label.on { color: #fff; border-color: rgba(255, 180, 84, .6); background: rgba(40, 26, 10, .6); }
 .label.hide { display: none; }
 
-/* ---------- Ma'lumot paneli ---------- */
+/* ---------- Info panel ---------- */
 #panel {
   position: fixed; top: 76px; right: 22px; z-index: 25;
   width: 330px; max-height: calc(100vh - 210px); overflow-y: auto;
@@ -118,8 +138,8 @@ html, body {
 .panel-note span { font-size: 10px; letter-spacing: .22em; color: var(--accent); }
 .panel-note p { margin: 8px 0 0; font-size: 12.5px; line-height: 1.65; color: #d8e0fb; }
 
-/* Manba havolasi. `hidden` atributi ishlashi uchun display'ni qaytarib
-   o'chiramiz — aks holda `display: block` uni yengib, yashirilmay qoladi. */
+/* Source link. The `display: none` rule has to be restored for `[hidden]`,
+   otherwise `display: block` overrides the attribute and the link stays visible. */
 .panel-source {
   display: block; margin-top: 12px; padding: 9px; text-align: center;
   font-size: 11px; letter-spacing: .06em; color: var(--muted);
@@ -129,7 +149,7 @@ html, body {
 .panel-source:hover { color: var(--accent-2); border-color: rgba(110,168,255,.45); background: rgba(110,168,255,.08); }
 .panel-source[hidden] { display: none; }
 
-/* ---------- Boshqaruv ---------- */
+/* ---------- Control bar ---------- */
 #controls {
   position: fixed; left: 50%; z-index: 25;
   bottom: calc(20px + env(safe-area-inset-bottom));
@@ -168,10 +188,10 @@ html, body {
   .hint { display: none; }
   .planets .pbtn { padding: 8px 12px 8px 9px; font-size: 10.5px; min-height: 38px; }
 
-  /* Boshqaruv paneli 9 ta tugmani necha qatorga o'rashiga qarab balandligi
-     o'zgaradi, shuning uchun 178px kabi qat'iy son ishonchsiz: tor ekranda
-     panel tugmalar ustiga tushib qolardi. Haqiqiy balandlikni main.js
-     o'lchab `--controls-h` ga yozadi, bu yerda esa shunga tayanamiz. */
+  /* How tall the control bar is depends on how many rows its nine buttons
+     wrap into, so a fixed 178px was unreliable: on a narrow screen the panel
+     landed on top of the buttons. main.js measures the real height and writes
+     it to `--controls-h`; this rule leans on that. */
   #panel {
     top: auto; right: 12px; left: 12px; width: auto;
     bottom: calc(var(--controls-h, 158px) + 20px + env(safe-area-inset-bottom));
@@ -180,18 +200,22 @@ html, body {
   }
   #panel-close { top: 6px; right: 8px; padding: 10px; }
 
-  /* Tezlik telefonda ham kerak — qatorni o'rab, slayderni butun enga yoyamiz */
+  /* Speed matters on phones too - wrap the row and give the slider full width */
   .row.tools { flex-wrap: wrap; justify-content: center; row-gap: 8px; }
   .speed { flex-basis: 100%; padding-left: 0; margin-left: 0; border-left: 0; justify-content: center; }
   #speed { flex: 1; max-width: 220px; height: 4px; }
   #speed::-webkit-slider-thumb { width: 18px; height: 18px; }
   #speed::-moz-range-thumb { width: 18px; height: 18px; }
   .tool { padding: 9px 12px; min-height: 38px; }
+
+  /* The hint is hidden on small screens but the language switcher stays,
+     so it needs a real touch target. */
+  .lang-btn { padding: 7px 11px; min-height: 34px; }
 }
 
-/* ---------- Klaviatura bilan yurish ---------- */
-/* Qorong'i fonda brauzerning standart konturi ko'rinmaydi — o'zimiznikini
-   qo'yamiz. `:focus-visible` sichqoncha bilan bosilganda chiqmaydi. */
+/* ---------- Keyboard navigation ---------- */
+/* The browser's default focus ring is invisible on this dark background, so
+   we draw our own. `:focus-visible` stays out of the way of mouse clicks. */
 :focus-visible {
   outline: 2px solid var(--accent-2);
   outline-offset: 2px;
@@ -199,12 +223,12 @@ html, body {
 }
 button, a, .label { -webkit-tap-highlight-color: transparent; }
 
-/* ---------- Harakatni kamaytirish ---------- */
-/* Kamera sayyoradan sayyoraga uchganda ko'rish maydoni butunlay siljiydi —
-   vestibulyar sezgirligi bor odamda bu ko'ngil aynishiga sabab bo'ladi.
-   Tizim sozlamasida "harakatni kamaytirish" yoqilgan bo'lsa, interfeys
-   animatsiyalari o'chadi; kameraning uchishini esa main.js qisqartiradi.
-   Sayyoralarning aylanishi o'chirilmaydi — u bezak emas, mazmunning o'zi. */
+/* ---------- Reduced motion ---------- */
+/* Flying the camera between bodies sweeps the entire field of view, which can
+   trigger nausea in people sensitive to vestibular motion. When the system
+   asks for reduced motion the interface animations stop here, and main.js
+   shortens the camera flight. Planet rotation is left running - it is the
+   subject of the page, not decoration. */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: .01ms !important;

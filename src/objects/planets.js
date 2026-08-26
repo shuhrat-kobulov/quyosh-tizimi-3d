@@ -1,4 +1,4 @@
-// Sayyoralar, ularning atmosferasi, halqalari, yo'ldoshlari va orbita chiziqlari.
+// Planets with their atmospheres, rings, moons and orbit lines.
 import * as THREE from 'three';
 import { PLANETS, TIME_RATE } from '../data/planets.js';
 import { makeRockyTexture, makeGasTexture, makeEarthTextures, makeRingTexture } from '../utils/textures.js';
@@ -6,7 +6,7 @@ import { seg } from '../utils/quality.js';
 
 const tick = () => new Promise((r) => setTimeout(r, 0));
 
-/* --- Atmosfera: Fresnel qobiq --- */
+/* --- Atmosphere: a Fresnel shell --- */
 function makeAtmosphere(radius, { color, opacity, scale }) {
   const mat = new THREE.ShaderMaterial({
     uniforms: {
@@ -42,7 +42,7 @@ function makeAtmosphere(radius, { color, opacity, scale }) {
   return new THREE.Mesh(new THREE.SphereGeometry(radius * scale, seg(48), seg(48)), mat);
 }
 
-/* --- Halqa: UV ni radius bo'ylab qayta hisoblaymiz --- */
+/* --- Ring: UVs are recomputed along the radius --- */
 function makeRing(planetRadius, ring, ringTex) {
   const inner = planetRadius * ring.inner;
   const outer = planetRadius * ring.outer;
@@ -65,12 +65,12 @@ function makeRing(planetRadius, ring, ringTex) {
   });
 
   const mesh = new THREE.Mesh(geo, mat);
-  mesh.rotation.x = -Math.PI / 2; // sayyora ekvatori tekisligiga yotqizamiz
+  mesh.rotation.x = -Math.PI / 2; // lay it flat in the planet's equatorial plane
   mesh.renderOrder = 1;
   return mesh;
 }
 
-/* --- Orbita chizig'i --- */
+/* --- Orbit line --- */
 function makeOrbitLine(radius, color) {
   const steps = 256;
   const pts = new Float32Array((steps + 1) * 3);
@@ -104,10 +104,11 @@ export async function createPlanets(scene, onProgress = () => {}) {
 
   for (let idx = 0; idx < PLANETS.length; idx++) {
     const p = PLANETS[idx];
-    onProgress((idx + 1) / (PLANETS.length + 1), `${p.name} yaratilmoqda…`);
+    // The caller words the message — this builder stays language-free.
+    onProgress((idx + 1) / (PLANETS.length + 1), p.key);
     await tick();
 
-    /* Teksturalar */
+    /* Textures */
     let map = null, bump = null, clouds = null, rough = null;
     if (p.type === 'earth') {
       ({ map, bump, rough, clouds } = makeEarthTextures());
@@ -117,7 +118,8 @@ export async function createPlanets(scene, onProgress = () => {}) {
       ({ map, bump } = makeRockyTexture(p.texture));
     }
 
-    /* Iyerarxiya: pivot(orbita qiyaligi) → holder(orbitadagi joy) → tilt(o'q qiyaligi) → mesh */
+    /* Hierarchy: pivot (orbital inclination) -> holder (place on the orbit)
+       -> tilt (axial tilt) -> mesh */
     const pivot = new THREE.Group();
     pivot.rotation.x = p.inclination;
     scene.add(pivot);
@@ -145,7 +147,7 @@ export async function createPlanets(scene, onProgress = () => {}) {
     tilt.add(mesh);
     pickable.push(mesh);
 
-    /* Bulut qatlami (faqat Yer) */
+    /* Cloud layer (Earth only) */
     let cloudMesh = null;
     if (clouds) {
       cloudMesh = new THREE.Mesh(
@@ -164,7 +166,7 @@ export async function createPlanets(scene, onProgress = () => {}) {
     if (p.atmosphere) tilt.add(makeAtmosphere(p.radius, p.atmosphere));
     if (p.ring) tilt.add(makeRing(p.radius, p.ring, ringTex));
 
-    /* Yo'ldoshlar */
+    /* Moons */
     const moons = [];
     for (const m of p.moons ?? []) {
       const mPivot = new THREE.Group();
@@ -186,7 +188,7 @@ export async function createPlanets(scene, onProgress = () => {}) {
       moons.push({ data: m, pivot: mPivot, mesh: mMesh, phase: Math.random() * Math.PI * 2 });
     }
 
-    /* Orbita chizig'i */
+    /* Orbit line */
     const line = makeOrbitLine(p.orbit, p.color);
     pivot.add(line);
     orbitLines.push(line);
@@ -203,7 +205,7 @@ export async function createPlanets(scene, onProgress = () => {}) {
     });
   }
 
-  /* Sayyoralarni bir vaqt qiymatiga ko'ra joylashtiradi */
+  /* Places every body according to one simulation time value */
   function update(simTime) {
     const t = simTime * TIME_RATE;
     for (const b of bodies) {
@@ -215,7 +217,7 @@ export async function createPlanets(scene, onProgress = () => {}) {
       for (const m of b.moons) {
         const ma = m.phase + t * m.data.speed * Math.PI * 2;
         m.mesh.position.set(Math.cos(ma) * m.data.orbit, 0, Math.sin(ma) * m.data.orbit);
-        m.mesh.rotation.y = ma; // har doim sayyoraga bir tomoni bilan qaraydi
+        m.mesh.rotation.y = ma; // tidally locked: one face always toward the planet
       }
     }
   }

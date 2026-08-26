@@ -1,5 +1,5 @@
-// Quyosh: sirt GLSL shaderda "jonli" fbm shovqin bilan chiziladi,
-// tashqi qatlam Fresnel toji (korona), eng ustida esa billboard nur.
+// The Sun: its surface is drawn live in a GLSL shader from fbm noise, wrapped
+// in a Fresnel corona, with billboard glow sprites on top.
 import * as THREE from 'three';
 import { makeGlowSprite } from '../utils/textures.js';
 import { smoothstep } from '../utils/noise.js';
@@ -66,9 +66,9 @@ float fbm(vec3 p){
 
 export function createSun(radius) {
   const group = new THREE.Group();
-  group.name = 'quyosh';
+  group.name = 'sun';
 
-  /* --- Fotosfera --- */
+  /* --- Photosphere --- */
   const coreMat = new THREE.ShaderMaterial({
     uniforms: { uTime: { value: 0 } },
     vertexShader: /* glsl */ `
@@ -92,7 +92,7 @@ export function createSun(radius) {
       void main(){
         vec3 p = normalize(vPos);
 
-        // Ikki qatlamli konvektsiya: sekin katta hujayralar + tez granulyatsiya
+        // Two convection layers: slow large cells plus fast granulation
         float slow = fbm(p * 2.6 + vec3(0.0, uTime * 0.045, 0.0));
         float fast = fbm(p * 7.5 + vec3(uTime * 0.12, 0.0, uTime * 0.09) + slow * 0.7);
         float n = slow * 0.62 + fast * 0.38;
@@ -107,11 +107,11 @@ export function createSun(radius) {
         col = mix(col, hot, smoothstep(0.4, 0.78, heat));
         col = mix(col, white, smoothstep(0.88, 1.0, heat));
 
-        // Limb darkening — chekkalari biroz so'niq
+        // Limb darkening - the edges fall off slightly
         float limb = pow(max(dot(normalize(vNormal), normalize(vView)), 0.0), 0.42);
         col *= 0.48 + 0.52 * limb;
 
-        // Chekkadagi issiq halqa
+        // Hot rim at the edge
         col += vec3(1.0, 0.42, 0.08) * pow(1.0 - limb, 3.0) * 0.45;
 
         gl_FragColor = vec4(col * 1.06, 1.0);
@@ -120,13 +120,13 @@ export function createSun(radius) {
   });
 
   const core = new THREE.Mesh(new THREE.SphereGeometry(radius, 96, 96), coreMat);
-  core.userData.key = 'quyosh';
+  core.userData.key = 'sun';
   group.add(core);
 
-  /* --- Korona --- */
-  // Backside qobiqda oddiy Fresnel eng yorqin nuqtani tashqi chekkaga qo'yadi va
-  // natijada aniq chegarali "pufak" chiqadi. Shuning uchun egri chiziqni
-  // teskari qilamiz: yorqinlik fotosfera chetida maksimal, tashqariga qarab nolga tushadi.
+  /* --- Corona --- */
+  // On a backside shell a plain Fresnel term puts the brightest point at the
+  // outer edge, which reads as a hard-edged bubble. So the curve is inverted:
+  // brightness peaks at the photosphere edge and falls to zero outward.
   const CORONA_SCALE = 1.5;
   const rimMin = 1 - Math.sqrt(1 - 1 / (CORONA_SCALE * CORONA_SCALE));
 
@@ -159,7 +159,7 @@ export function createSun(radius) {
         float t = clamp((1.0 - rim) / max(1.0 - uRimMin, 1e-4), 0.0, 1.0);
         float a = pow(t, 5.0);
 
-        // Toj tekis emas — shovqin bilan "tillar" hosil qilamiz
+        // The corona is not smooth - noise gives it tongues
         float flare = 0.88 + 0.22 * fbm(normalize(vPos) * 5.0 + vec3(uTime * 0.2));
         vec3 col = mix(vec3(1.0, 0.86, 0.52), vec3(1.0, 0.36, 0.06), 1.0 - t);
         gl_FragColor = vec4(col, a * 0.62 * flare);
@@ -169,7 +169,7 @@ export function createSun(radius) {
   const corona = new THREE.Mesh(new THREE.SphereGeometry(radius * CORONA_SCALE, 64, 64), coronaMat);
   group.add(corona);
 
-  /* --- Billboard nur: zich yadro + keng yumshoq halo --- */
+  /* --- Billboard glow: a dense core plus a wide soft halo --- */
   function glowSprite(scale, opacity, stops) {
     const sp = new THREE.Sprite(
       new THREE.SpriteMaterial({
@@ -197,23 +197,23 @@ export function createSun(radius) {
   ]);
   group.add(glowCore, glowHalo);
 
-  /* --- Yorug'lik manbai --- */
-  const light = new THREE.PointLight(0xfff2dd, 3.1, 0, 0); // decay = 0: butun tizim bir xil yoritiladi
+  /* --- Light source --- */
+  const light = new THREE.PointLight(0xfff2dd, 3.1, 0, 0); // decay = 0: the whole system is lit evenly
   group.add(light);
 
   return {
     group,
     core,
     light,
-    // Keng halo uzoqdan chiroyli, lekin yaqindan butun ekranni tutib qo'yadi —
-    // shuning uchun uning kuchini kamera masofasiga bog'laymiz.
+    // The wide halo looks good from afar but swamps the screen up close, so
+    // its strength is tied to camera distance.
     update(t, camDist) {
       coreMat.uniforms.uTime.value = t;
       coronaMat.uniforms.uTime.value = t;
 
       const pulse = Math.sin(t * 0.7) * 0.04;
       glowCore.material.opacity = 0.18 + 0.30 * smoothstep(radius * 3, radius * 14, camDist) + pulse;
-      // Keng halo faqat uzoqdan qaraganda paydo bo'ladi
+      // The wide halo only appears when viewed from a distance
       glowHalo.material.opacity = 0.19 * smoothstep(radius * 8, radius * 22, camDist) + pulse * 0.3;
     },
   };

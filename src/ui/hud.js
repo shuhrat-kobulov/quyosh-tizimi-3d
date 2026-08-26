@@ -1,10 +1,62 @@
-// DOM interfeysi: ma'lumot paneli, tezkor tugmalar va 3D dan proyeksiya
-// qilinadigan nomlar.
+// DOM layer: the info panel, the quick-jump buttons, the language switcher and
+// the name labels projected from 3D positions.
 import * as THREE from 'three';
+import * as I18N from '../i18n/index.js';
 
 const $ = (id) => document.getElementById(id);
 
-/* ---------------- Ma'lumot paneli ---------------- */
+/* ---------------- Static strings ---------------- */
+// Everything in index.html that is plain text carries a `data-i18n` attribute,
+// so a language switch is one walk over the document instead of a list of
+// getElementById calls that drifts out of date whenever the markup changes.
+export function applyStaticStrings() {
+  for (const el of document.querySelectorAll('[data-i18n]')) {
+    el.textContent = I18N.t(el.dataset.i18n);
+  }
+  for (const el of document.querySelectorAll('[data-i18n-title]')) {
+    el.title = I18N.t(el.dataset.i18nTitle);
+  }
+  for (const el of document.querySelectorAll('[data-i18n-aria]')) {
+    el.setAttribute('aria-label', I18N.t(el.dataset.i18nAria));
+  }
+
+  const loc = I18N.locale();
+  document.documentElement.lang = loc.htmlLang;
+  document.title = I18N.t('docTitle');
+  document.querySelector('meta[name="description"]')?.setAttribute('content', I18N.t('docDescription'));
+}
+
+/* ---------------- Language switcher ---------------- */
+export function buildLangSwitcher(onSelect) {
+  const host = $('lang-switch');
+  host.innerHTML = '';
+  const buttons = new Map();
+
+  for (const loc of I18N.LOCALES) {
+    const b = document.createElement('button');
+    b.className = 'lang-btn';
+    b.type = 'button';
+    b.textContent = loc.short;
+    b.lang = loc.htmlLang;
+    // The full name is the accessible label — "UZ" alone tells a screen
+    // reader nothing.
+    b.setAttribute('aria-label', loc.label);
+    b.title = loc.label;
+    b.addEventListener('click', () => onSelect(loc.code));
+    host.append(b);
+    buttons.set(loc.code, b);
+  }
+
+  return function setActive(code) {
+    for (const [c, b] of buttons) {
+      const on = c === code;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-pressed', String(on));
+    }
+  };
+}
+
+/* ---------------- Info panel ---------------- */
 export function showPanel(info) {
   $('panel-kind').textContent = info.kind;
   $('panel-name').textContent = info.name;
@@ -24,8 +76,8 @@ export function showPanel(info) {
     dl.append(row);
   }
 
-  // Manba havolasi: raqamlar qayerdan olinganini ko'rsatadi. Yo'ldoshlar
-  // uchun `source` bo'lmasligi mumkin — u holda havola yashiriladi.
+  // Source link: shows where the figures come from. A body without a `source`
+  // hides the link rather than pointing nowhere.
   const src = $('panel-source');
   if (info.source) {
     src.href = info.source;
@@ -42,7 +94,7 @@ export function hidePanel() {
   $('panel').classList.add('hidden');
 }
 
-/* ---------------- Tezkor tugmalar ---------------- */
+/* ---------------- Quick-jump buttons ---------------- */
 export function buildNav(items, onSelect) {
   const nav = $('planet-nav');
   nav.innerHTML = '';
@@ -51,7 +103,13 @@ export function buildNav(items, onSelect) {
   for (const it of items) {
     const b = document.createElement('button');
     b.className = 'pbtn';
-    b.innerHTML = `<i style="background:${it.color};color:${it.color}"></i>${it.name}`;
+    b.type = 'button';
+
+    const dot = document.createElement('i');
+    dot.style.background = it.color;
+    dot.style.color = it.color;
+    b.append(dot, document.createTextNode(it.name));
+
     b.addEventListener('click', () => onSelect(it.key));
     nav.append(b);
     buttons.set(it.key, b);
@@ -62,7 +120,7 @@ export function buildNav(items, onSelect) {
   };
 }
 
-/* ---------------- 3D nomlar ---------------- */
+/* ---------------- 3D name labels ---------------- */
 export function createLabels(entries, onClick) {
   const host = $('labels');
   host.innerHTML = '';
@@ -90,14 +148,14 @@ export function createLabels(entries, onClick) {
     const sunAngle = Math.asin(Math.min(1, sunRadius * 1.15 / Math.max(distSun, sunRadius + 1e-3)));
     sunDir.copy(sunPos).sub(camera.position).normalize();
     camera.getWorldDirection(camDir);
-    camUp.set(0, 1, 0).applyQuaternion(camera.quaternion); // ekrandagi "tepa" yo'nalishi
+    camUp.set(0, 1, 0).applyQuaternion(camera.quaternion); // screen "up" direction
 
     for (const it of items) {
       it.getPos(it.pos);
       const distObj = camera.position.distanceTo(it.pos);
       objDir.copy(it.pos).sub(camera.position).normalize();
 
-      // Kamera orqasida yoki Quyosh ortida bo'lsa — yashiramiz
+      // Hide when behind the camera, or hidden behind the Sun
       let hide = objDir.dot(camDir) <= 0;
       if (!hide && distObj > distSun && objDir.angleTo(sunDir) < sunAngle) hide = true;
 
@@ -106,8 +164,8 @@ export function createLabels(entries, onClick) {
         continue;
       }
 
-      // Jismning ekrandagi radiusini o'lchab, yorliqni uning ustiga qo'yamiz —
-      // shunda yaqinlashganda ham yorliq sayyora ustiga tushib qolmaydi.
+      // Measure the body's on-screen radius and place the label above it, so
+      // the label never lands on top of the planet when you fly close.
       pCenter.copy(it.pos).project(camera);
       pTop.copy(it.pos).addScaledVector(camUp, it.radius).project(camera);
 
@@ -131,7 +189,13 @@ export function createLabels(entries, onClick) {
     for (const it of items) it.el.classList.toggle('on', it.key === key);
   }
 
-  return { update, setVisible, setActive };
+  // Renaming in place keeps the labels' DOM nodes and positions — a language
+  // switch must not make the scene flicker.
+  function setNames(nameFor) {
+    for (const it of items) it.el.textContent = nameFor(it.key);
+  }
+
+  return { update, setVisible, setActive, setNames };
 }
 
 export function setLoaderProgress(fraction, text) {
@@ -143,13 +207,13 @@ export function hideLoader() {
   $('loader').classList.add('done');
 }
 
-/* ---------------- WebGL bor-yo'qligi va halokatli xato ---------------- */
+/* ---------------- WebGL support and fatal errors ---------------- */
 export function hasWebGL() {
   try {
     const c = document.createElement('canvas');
     const gl = c.getContext('webgl2') ?? c.getContext('webgl');
-    // Sinov uchun ochilgan kontekstni darrov qaytaramiz: brauzerda bir vaqtda
-    // ochiq bo'la oladigan WebGL kontekstlari soni cheklangan.
+    // Release the probe context immediately: browsers cap how many WebGL
+    // contexts may be open at once.
     gl?.getExtension('WEBGL_lose_context')?.loseContext();
     return !!gl;
   } catch {
@@ -157,8 +221,8 @@ export function hasWebGL() {
   }
 }
 
-// Sahna umuman ishlamaganda ko'rsatiladigan xabar. Yuklash ekrani allaqachon
-// yopilgan bo'lsa ham qaytarib ochiladi (masalan, kontekst yo'qolganda).
+// Shown when the scene cannot run at all. Reopens the loader even if it was
+// already dismissed (for example when the GL context is lost mid-session).
 export function showFatal(title, text) {
   const loader = $('loader');
   if (!loader) return;

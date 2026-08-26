@@ -1,187 +1,207 @@
-# Quyosh Tizimi — 3D Sayohat
+# Solar System — A 3D Journey
 
-Three.js asosida qurilgan interaktiv Quyosh tizimi. Sayyorani bosasiz — kamera
-uning yoniga uchib boradi, panelda esa u haqidagi ma'lumotlar chiqadi.
+An interactive solar system built with Three.js. Click a planet and the camera
+flies over to it while a panel shows what we know about it. Available in
+**Uzbek, Russian and English**.
 
-**Onlayn ko'rish:** https://shuhrat-kobulov.github.io/quyosh-tizimi-3d
-*(Loyihani fork qilsangiz, `.env` faylidagi `VITE_SITE_URL` ni va yuqoridagi
-manzilni o'zingiznikiga almashtiring — ijtimoiy tarmoqlarda havola qanday
-ko'rinishi shunga bog'liq.)*
+**Live:** https://shuhrat-kobulov.github.io/quyosh-tizimi-3d
 
-**Loyihada birorta ham tashqi rasm fayli yo'q.** Barcha sayyora teksturalari,
-Saturn halqasi, yulduzlar va tumanliklar dastur ishga tushganda `canvas` va
-fbm-shovqin yordamida kod bilan chiziladi. Quyosh esa to'liq GLSL shaderda
-jonlanadi.
+*(If you fork this, change `VITE_SITE_URL` in `.env` and the link above to your
+own address — link previews on social networks depend on it.)*
 
-## Ishga tushirish
+**The project ships no image files at all.** Every planet texture, Saturn's
+ring, the stars and the nebulae are drawn in code with `canvas` and fbm noise
+when the page loads. The Sun is a live GLSL shader.
+
+## Running it
 
 ```bash
 npm install
 npm run dev        # http://localhost:5173
 ```
 
-Boshqa buyruqlar:
+Other commands:
 
 ```bash
-npm run build      # dist/ papkasiga yig'ish
-npm run preview    # yig'ilgan versiyani ko'rish
+npm run build      # bundle into dist/
+npm run preview    # serve the built version
 ```
 
-## Internetga chiqarish
+## Deploying
 
-Sayt to'liq statik — server kerak emas, `dist/` papkasini istalgan hostingga
-tashlash kifoya (`vite.config.js` da `base: './'` turibdi, shuning uchun sayt
-qaysi papkada turishidan qat'i nazar ishlaydi).
+The site is fully static — no server needed. Drop `dist/` on any host
+(`vite.config.js` sets `base: './'`, so it works from any subdirectory).
 
-**GitHub Pages** uchun hamma narsa tayyor: repoga `main` ga push qilasiz,
-`.github/workflows/deploy.yml` qolganini o'zi bajaradi. Bir martalik sozlash —
-GitHub'da **Settings → Pages → Source = "GitHub Actions"**.
+**GitHub Pages** is already wired up: push to `main` and
+`.github/workflows/deploy.yml` does the rest. One-time setup — in GitHub,
+**Settings → Pages → Source = "GitHub Actions"**.
 
-Keyin **`.env`** faylidagi manzilni o'zgartiring:
+Then set your address in **`.env`**:
 
 ```bash
-VITE_SITE_URL=https://foydalanuvchi.github.io/quyosh-tizimi-3d
+VITE_SITE_URL=https://your-user.github.io/quyosh-tizimi-3d
 ```
 
-Bu manzil Telegram va boshqa tarmoqlar havolani ko'rsatganda kerak bo'ladigan
-`og:image` uchun ishlatiladi — u **to'liq** (absolyut) bo'lishi shart, aks holda
-havola oddiy matn bo'lib chiqadi. Ulashishda ko'rinadigan rasm — `public/og.png`.
+That address is used for the `og:image` that Telegram and other networks read
+when someone shares the link. It **must** be absolute, or the link renders as
+plain text. The preview image itself is `public/og.png`.
 
-Netlify yoki Vercel uchun: build buyrug'i `npm run build`, papka `dist`.
+For Netlify or Vercel: build command `npm run build`, output directory `dist`.
 
-## Boshqaruv
+## Controls
 
-| Amal | Nima qiladi |
+| Action | What it does |
 |---|---|
-| Sayyorani bosish | O'sha sayyoraga uchib borish |
-| Sichqonchani surish | Kamerani aylantirish |
-| G'ildirak | Yaqinlashtirish / uzoqlashtirish |
-| `1` … `8` | Merkuriydan Neptungacha |
-| `Q` | Quyoshga o'tish |
-| `0` yoki `Esc` | Umumiy ko'rinishga qaytish |
-| `Bo'sh joy` | Vaqtni to'xtatish / davom ettirish |
-| `O` | Orbita chiziqlarini yoqish/o'chirish |
-| `L` | Nomlarni yoqish/o'chirish |
+| Click a planet | Fly to that planet |
+| Drag | Orbit the camera |
+| Scroll wheel | Zoom in / out |
+| `1` … `8` | Mercury through Neptune |
+| `Q` | Jump to the Sun |
+| `0` or `Esc` | Back to the overview |
+| `Space` | Pause / resume time |
+| `O` | Toggle orbit lines |
+| `L` | Toggle name labels |
 
-### Havola bilan ulashish
+### Languages
 
-Manzil qatori tanlangan sayyoraga qarab o'zi yangilanadi, ya'ni brauzerdagi
-havolani shundoq nusxalab yuborsangiz, ochgan odam aynan o'sha sayyorani
-ko'radi:
+Three buttons in the top-right corner switch between **UZ / RU / EN**. Nothing
+in the 3D scene depends on language, so switching only redraws text — the
+camera, the clock and the current selection all stay where they were.
+
+The language is picked in this order: the `?lang=` parameter, then the
+visitor's previous choice (`localStorage`), then the browser's language, and
+Uzbek if none of those match.
 
 ```
-?sayyora=saturn      # o'zbekcha kalitlar: quyosh, merkuriy, venera, yer, mars,
-                     # yupiter, saturn, uran, neptun
-?planet=earth        # inglizcha nomlar ham ishlaydi
+?lang=uz | ru | en
 ```
 
-O'qituvchi darsda "mana shu havolani oching" deb bitta sayyorani ko'rsata oladi.
+Adding a language means adding one file under `src/i18n/` and listing it in
+`src/i18n/index.js`. Nothing else has to change: `src/data/planets.js` holds
+only physical data — radii, orbits, textures — and no display text at all.
 
-Pastdagi "Tezlik" slayderi 0× dan 10× gacha. **1.0× tezlikda Yerning bir yili
-taxminan 45 soniya** davom etadi — qolgan hamma sayyoralar shunga nisbatan
-haqiqiy tezlik nisbatida harakatlanadi.
+The static `<title>` and `og:` tags in `index.html` stay in Uzbek, because that
+is the primary audience and it is what a crawler reads when a link is shared;
+the running page rewrites the title and description to the reader's language.
 
-### Ma'lumot manbalari
+### Sharing a link
 
-Har bir sayyora panelining pastida **"Manba: NASA ma'lumot sahifasi"** havolasi
-turadi — paneldagi raqamlar o'sha sahifalardagi qiymatlarga tayanadi. Dars
-paytida savol tugʻilsa, o'qituvchi manbani darrov ocha oladi.
+The address bar tracks the selected body and the current language, so copying
+the link straight out of the browser shows the recipient the same thing:
 
-Manzillar `src/data/planets.js` dagi `NASA` obyektida yigʻilgan. Ular bir
-qolipda emas (`/facts/` va `/venus-facts/` aralash), shuning uchun qo'lda
-yozilgan. NASA sahifalarni ko'chirsa, tuzatadigan joy — shu bitta obyekt.
+```
+?planet=saturn&lang=ru
+```
 
-### Maxsus ehtiyojlar
+A teacher can hand out one link and have everyone land on the same planet.
 
-- Qurilma sozlamasida **"harakatni kamaytirish"** yoqilgan bo'lsa (iOS: Settings
-  → Accessibility → Motion, Windows/macOS da ham bor), kamera sayyoradan
-  sayyoraga uchmaydi — darrov joyiga o'tadi. Katta ko'lamli kamera harakati
-  vestibulyar sezgirligi bor odamda ko'ngil aynishiga sabab bo'ladi.
-  Sayyoralarning aylanishi o'chirilmaydi — u bezak emas, mavzuning o'zi.
-- Sahifani barmoq bilan kattalashtirish mumkin (`maximum-scale` cheklovi yo'q).
-- Klaviatura bilan yurganda fokus konturi ko'rinadi; fokus tugmada turganda
-  `Bo'sh joy` o'sha tugmani bosadi, pauzani emas.
-- Panel `aria-live` bilan belgilangan — sayyora almashganda ekran o'quvchi
-  yangi ma'lumotni o'qib beradi.
+Links shared before the codebase moved to English keys still work:
+`?sayyora=merkuriy` and `?til=uz` are accepted as aliases.
 
-## Fayllar
+The "Speed" slider at the bottom runs from 0x to 10x. **At 1.0x one Earth year
+takes about 45 seconds** — every other planet moves at its true speed relative
+to that.
+
+### Where the numbers come from
+
+Each panel ends with a **source link** to NASA's fact page for that body — the
+figures in the panel are based on those pages. If a question comes up in class,
+the source is one click away.
+
+The URLs live in the `NASA` object in `src/data/planets.js`. They do not follow
+one pattern (`/facts/` and `/venus-facts/` are mixed), so they are written out
+by hand. If NASA moves the pages, that one object is the only thing to fix.
+
+### Accessibility
+
+- With **reduced motion** enabled in the device settings (iOS: Settings →
+  Accessibility → Motion; Windows and macOS have the same switch), the camera
+  no longer flies between bodies — it cuts straight there. Large sweeping
+  camera motion is what triggers nausea in people sensitive to it. Planet
+  rotation keeps running: it is the subject, not decoration.
+- The page can be pinch-zoomed (no `maximum-scale` restriction).
+- Keyboard focus is visible, and when focus is on a button `Space` presses that
+  button rather than toggling pause.
+- The panel is marked `aria-live`, so a screen reader announces the new body
+  when the selection changes.
+
+## Files
 
 ```
 src/
-  main.js               sahna, kamera, post-processing, boshqaruv
-  data/planets.js       sayyoralar ma'lumoti (o'lcham, orbita, faktlar)
-  utils/noise.js        seed'li PRNG va gorizontal bo'yicha uzluksiz fbm shovqin
-  utils/quality.js      qurilmaga qarab sahna og'irligini tanlash
-  utils/textures.js     barcha teksturalar shu yerda chiziladi
-  objects/sun.js        Quyosh: fotosfera shaderi, korona, nur
-  objects/planets.js    sayyoralar, atmosfera, halqalar, yo'ldoshlar, orbitalar
-  objects/space.js      yulduzlar, tumanliklar, asteroidlar kamari
-  ui/hud.js             panel, tugmalar va 3D dan proyeksiya qilinadigan nomlar
+  main.js               scene, camera, post-processing, controls
+  data/planets.js       physical data only (sizes, orbits, textures, sources)
+  i18n/index.js         language detection, storage, string lookup
+  i18n/{uz,ru,en}.js    all display text, one file per language
+  utils/noise.js        seeded PRNG and fbm noise that tiles horizontally
+  utils/quality.js      picks how heavy the scene may be for the device
+  utils/textures.js     every texture is drawn here
+  objects/sun.js        the Sun: photosphere shader, corona, glow
+  objects/planets.js    planets, atmospheres, rings, moons, orbit lines
+  objects/space.js      stars, nebulae, asteroid belt
+  ui/hud.js             panel, buttons, language switcher, projected labels
 ```
 
-## Ichkarida nima ishlayapti
+## How it works inside
 
-**Protsedural teksturalar.** `utils/noise.js` dagi value-noise `x` o'qi bo'yicha
-davriy qilib yozilgan — shuning uchun shar sirtida tekstura choki ko'rinmaydi.
-Toshli sayyoralar uchun oddiy fbm ustiga "ridged" shovqin qo'shiladi (krater
-gardishlari), gaz gigantlarida esa kenglik turbulentlik bilan buziladi va
-natijada Yupiterning zonal chiziqlari hosil bo'ladi. Yer alohida ishlanadi:
-okean chuqurligi, qit'alar, ~30° kenglikdagi cho'l mintaqalari, muz qalpoqlari,
-alohida bulut qatlami va roughness xaritasi (okean silliq, quruqlik g'adir-budur).
+**Procedural textures.** The value noise in `utils/noise.js` is written to be
+periodic along the `x` axis, so no seam shows on the sphere. Rocky planets add
+"ridged" noise on top of plain fbm (crater rims); on gas giants latitude is
+distorted by turbulence, which is what produces Jupiter's zonal bands. Earth is
+a special case: ocean depth, continents, desert bands around 30° latitude, ice
+caps, a separate cloud layer and a roughness map (smooth ocean, rough land).
 
-**Quyosh.** Fotosfera — 3D simplex shovqinning ikki qatlami: sekin katta
-konvektsiya hujayralari va tezroq granulyatsiya. Chekkalarida limb darkening
-bor. Korona uchun oddiy Fresnel yaramaydi — u eng yorqin nuqtani tashqi chetga
-qo'yib, aniq chegarali "pufak" hosil qiladi. Shuning uchun egri chiziq teskari
-qilingan: yorqinlik fotosfera chetida maksimal bo'lib, tashqariga qarab nolga
-tushadi.
+**The Sun.** The photosphere is two layers of 3D simplex noise: slow, large
+convection cells and faster granulation, with limb darkening at the edges. A
+plain Fresnel term does not work for the corona — it puts the brightest point
+on the outer edge and produces a hard-edged bubble. So the curve is inverted:
+brightness peaks at the photosphere edge and falls to zero outward.
 
-**Asteroidlar kamari.** 2 200 ta tosh bitta `InstancedMesh` da. Har birining
-o'z orbita radiusi va tezligi bor — ichkaridagilari Kepler qonuni ruhida
-tezroq aylanadi, shuning uchun kamar vaqt o'tishi bilan "yoyilib" boradi.
+**The asteroid belt.** 2,200 rocks in a single `InstancedMesh`. Each has its own
+orbital radius and speed — inner ones move faster, in the spirit of Kepler's
+law — so the belt shears apart over time.
 
-**Sifat darajalari.** `utils/quality.js` yuklashdan oldin qurilmani baholaydi
-(yadrolar soni, xotira, ekran o'lchami, sensorli ekranmi) va uchta darajadan
-birini tanlaydi:
+**Quality tiers.** `utils/quality.js` sizes up the device before loading (core
+count, memory, screen size, touch or not) and picks one of three tiers:
 
-| Daraja | Piksel nisbati | Bloom | Tekstura | Yulduz | Asteroid |
+| Tier | pixelRatio | bloom | textures | asteroids | stars |
 |---|---|---|---|---|---|
-| `past` | 1.0 | yo'q | ½ | 2 200 | 550 |
-| `orta` | 1.5 | bor | ¾ | 4 000 | 1 200 |
-| `yuqori` | 2.0 | bor | 1× | 6 500 | 2 200 |
+| `low` | 1.0 | no | ½ | 550 | 2,200 |
+| `medium` | 1.5 | yes | ¾ | 1,200 | 4,000 |
+| `high` | 2.0 | yes | 1× | 2,200 | 6,500 |
 
-Tekstura o'lchamini yarmiga tushirish yuklash vaqtini ham, video xotirani ham
-taxminan 4 barobar kamaytiradi — fbm shovqin har bir piksel uchun hisoblanadi.
-Past darajada bloom uchun `EffectComposer` umuman qurilmaydi.
+Halving the texture size cuts both load time and video memory by roughly 4x —
+fbm noise is evaluated per pixel. At the low tier the `EffectComposer` for bloom
+is never built at all.
 
-Statik baho har doim ham to'g'ri chiqmaydi, shuning uchun birinchi 90 kadr
-o'lchanadi: 34 fps dan past bo'lsa daraja bir pog'ona pasayadi (bir marta,
-sahna "sakrab" turmasligi uchun). Majburan sinash: `?sifat=past`,
-`?sifat=orta`, `?sifat=yuqori`.
+A static guess is not always right, so the first 90 frames are measured: below
+34 fps the tier drops one step (once only, so the scene does not oscillate).
+Force a tier for testing: `?quality=low`, `?quality=medium`, `?quality=high`.
 
-**Kamera.** Sayyoraga o'tish real vaqtga bog'langan (kadrlar tezligiga emas),
-shuning uchun sekin qurilmada ham o'tish belgilangan sekundlarda tugaydi.
-O'tish tugagach kamera sayyora bilan birga siljiydi, lekin siz baribir uni
-erkin aylantira va yaqinlashtira olasiz. Yaqinlashish burchagi Quyosh tomondan
-tanlanadi — shuning uchun sayyoraning yoritilgan yuzi ko'rinadi.
+**Camera.** Transitions are tied to wall-clock time rather than frame count, so
+a move takes the same number of seconds on a slow device. Once the transition
+ends the camera tracks the planet along its orbit, while you can still rotate
+and zoom freely. The approach angle is chosen from the Sun's side, so you see
+the lit face rather than the night side.
 
-## Sozlash
+## Tinkering
 
-Brauzer konsolida `__solar` obyekti ochiq:
+`__solar` is exposed in the browser console:
 
 ```js
-__solar.bloom.strength = 0.3;      // porlashni kamaytirish
+__solar.bloom.strength = 0.3;      // less glow
 __solar.renderer.toneMappingExposure = 1.2;
-__solar.bodies[2].data.speed = 3;  // Yerni tezlashtirish
+__solar.bodies[2].data.speed = 3;  // speed Earth up
+__solar.I18N.setLanguage('ru');    // switch language from the console
 ```
 
-`__solar.bloom` past darajada `null` bo'ladi (bloom o'chirilgan) — sinash uchun
-sahifani `?sifat=yuqori` bilan oching.
+`__solar.bloom` is `null` at the low tier (bloom disabled) — open the page with
+`?quality=high` to experiment with it.
 
-Yangi sayyora yoki yo'ldosh qo'shish uchun `src/data/planets.js` ni tahrirlash
-kifoya — qolgani avtomatik quriladi.
+To add a planet or a moon, edit `src/data/planets.js` for the physical side and
+add its text to each file in `src/i18n/`. Everything else is built from those.
 
-## Litsenziya
+## License
 
-MIT — [LICENSE](LICENSE). Ya'ni maktabda, darsda, o'z loyihangizda bemalol
-ishlatishingiz, o'zgartirishingiz va tarqatishingiz mumkin.
+MIT — [LICENSE](LICENSE). Use it in a school, in a lesson or in your own
+project; modify it and redistribute it freely.

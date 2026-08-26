@@ -4,19 +4,27 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Quyosh Tizimi — 3D Sayohat</title>
-  <meta name="description" content="Interaktiv 3D Quyosh tizimi: sayyorani bosing — kamera uning yoniga uchib boradi, panelda esa u haqidagi ma'lumotlar chiqadi. O'zbek tilida, brauzerda ishlaydi, hech narsa o'rnatish shart emas." />
+
+  <!--
+    The static title/description stay in Uzbek: that is the primary audience,
+    and it is what Telegram and other crawlers read when a link is shared.
+    Once the page runs, src/ui/hud.js rewrites both to the reader's language.
+  -->
+  <meta name="description" content="Interaktiv 3D Quyosh tizimi: sayyorani bosing — kamera uning yoniga uchib boradi, panelda esa u haqidagi ma'lumotlar chiqadi. O'zbek, rus va ingliz tillarida, brauzerda ishlaydi." />
   <meta name="author" content="Shuhrat Kobulov" />
   <meta name="theme-color" content="#04050c" />
   <meta name="color-scheme" content="dark" />
   <link rel="canonical" href="%VITE_SITE_URL%/" />
 
-  <!-- Telegram, Facebook, LinkedIn uchun ko'rinish -->
+  <!-- Link preview for Telegram, Facebook, LinkedIn -->
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Quyosh Tizimi" />
   <meta property="og:locale" content="uz_UZ" />
+  <meta property="og:locale:alternate" content="ru_RU" />
+  <meta property="og:locale:alternate" content="en_US" />
   <meta property="og:url" content="%VITE_SITE_URL%/" />
   <meta property="og:title" content="Quyosh Tizimi — 3D Sayohat" />
-  <meta property="og:description" content="Sayyorani bosing — kamera uning yoniga uchib boradi. Interaktiv 3D Quyosh tizimi, o'zbek tilida." />
+  <meta property="og:description" content="Sayyorani bosing — kamera uning yoniga uchib boradi. Interaktiv 3D Quyosh tizimi: o'zbek, rus va ingliz tillarida." />
   <meta property="og:image" content="%VITE_SITE_URL%/og.png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
@@ -25,8 +33,13 @@
   <!-- Twitter/X -->
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Quyosh Tizimi — 3D Sayohat" />
-  <meta name="twitter:description" content="Interaktiv 3D Quyosh tizimi, o'zbek tilida. Brauzerda ochiladi." />
+  <meta name="twitter:description" content="Interaktiv 3D Quyosh tizimi: o'zbek, rus va ingliz tillarida. Brauzerda ochiladi." />
   <meta name="twitter:image" content="%VITE_SITE_URL%/og.png" />
+
+  <link rel="alternate" hreflang="uz" href="%VITE_SITE_URL%/?lang=uz" />
+  <link rel="alternate" hreflang="ru" href="%VITE_SITE_URL%/?lang=ru" />
+  <link rel="alternate" hreflang="en" href="%VITE_SITE_URL%/?lang=en" />
+  <link rel="alternate" hreflang="x-default" href="%VITE_SITE_URL%/" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -36,34 +49,38 @@
 <body>
   <canvas id="scene"></canvas>
 
-  <!-- Sayyora nomlari (3D dan proyeksiya qilinadi) -->
+  <!-- Body names, projected from 3D positions -->
   <div id="labels"></div>
 
-  <!-- Yuklanish ekrani -->
+  <!-- Loading screen -->
   <div id="loader">
     <div class="loader-inner">
       <div class="loader-ring"><span></span><span></span><span></span></div>
-      <h1>QUYOSH TIZIMI</h1>
+      <h1 data-i18n="brandTitle">QUYOSH TIZIMI</h1>
       <p id="loader-status">Yulduzlar yoqilmoqda…</p>
       <div class="loader-bar"><i id="loader-fill"></i></div>
     </div>
   </div>
 
-  <!-- Sarlavha -->
+  <!-- Header -->
   <header id="topbar">
     <div class="brand">
       <span class="dot"></span>
       <div>
-        <strong>QUYOSH TIZIMI</strong>
-        <em>interaktiv 3D sayohat</em>
+        <strong data-i18n="brandTitle">QUYOSH TIZIMI</strong>
+        <em data-i18n="brandTagline">interaktiv 3D sayohat</em>
       </div>
     </div>
-    <div class="hint">Sayyorani bosing · sichqoncha bilan aylantiring · g'ildirak = masshtab</div>
+    <div class="topbar-right">
+      <div class="hint" data-i18n="hint">Sayyorani bosing · sichqoncha bilan aylantiring · g'ildirak = masshtab</div>
+      <!-- Buttons are built by src/ui/hud.js from the locale list -->
+      <nav id="lang-switch" class="lang-switch" data-i18n-aria="langLabel" aria-label="Til"></nav>
+    </div>
   </header>
 
-  <!-- Ma'lumot paneli -->
-  <aside id="panel" class="hidden" aria-live="polite" aria-label="Tanlangan jism haqida ma'lumot">
-    <button id="panel-close" aria-label="Yopish">&times;</button>
+  <!-- Info panel -->
+  <aside id="panel" class="hidden" aria-live="polite" data-i18n-aria="panelRegion" aria-label="Tanlangan jism haqida ma'lumot">
+    <button id="panel-close" data-i18n-aria="panelClose" aria-label="Yopish">&times;</button>
     <div class="panel-head">
       <span id="panel-kind">SAYYORA</span>
       <h2 id="panel-name">—</h2>
@@ -71,24 +88,25 @@
     </div>
     <dl id="panel-facts"></dl>
     <div class="panel-note">
-      <span>Qiziqarli fakt</span>
+      <span data-i18n="panelFactTitle">Qiziqarli fakt</span>
       <p id="panel-fact">—</p>
     </div>
-    <a id="panel-source" class="panel-source" target="_blank" rel="noopener noreferrer" hidden>
+    <a id="panel-source" class="panel-source" target="_blank" rel="noopener noreferrer" data-i18n="panelSource" hidden>
       Manba: NASA ma'lumot sahifasi ↗
     </a>
   </aside>
 
-  <!-- Boshqaruv paneli -->
+  <!-- Control bar -->
   <footer id="controls">
     <div class="row planets" id="planet-nav"></div>
     <div class="row tools">
-      <button class="tool" id="btn-overview" title="Umumiy ko'rinish (Esc)">⌂ Umumiy</button>
-      <button class="tool active" id="btn-orbits" title="Orbitalar (O)">◎ Orbitalar</button>
-      <button class="tool active" id="btn-labels" title="Nomlar (L)">A Nomlar</button>
-      <button class="tool" id="btn-pause" title="Vaqtni to'xtatish (Bo'sh joy)">⏸ Pauza</button>
+      <button class="tool" id="btn-overview" data-i18n="btnOverview" data-i18n-title="btnOverviewTitle" title="Umumiy ko'rinish (Esc)">⌂ Umumiy</button>
+      <button class="tool active" id="btn-orbits" data-i18n="btnOrbits" data-i18n-title="btnOrbitsTitle" title="Orbitalar (O)">◎ Orbitalar</button>
+      <button class="tool active" id="btn-labels" data-i18n="btnLabels" data-i18n-title="btnLabelsTitle" title="Nomlar (L)">A Nomlar</button>
+      <!-- The pause caption depends on state, so main.js writes it (no data-i18n) -->
+      <button class="tool" id="btn-pause" data-i18n-title="btnPauseTitle" title="Vaqtni to'xtatish (Bo'sh joy)">⏸ Pauza</button>
       <label class="speed">
-        <span>Tezlik</span>
+        <span data-i18n="speedLabel">Tezlik</span>
         <input id="speed" type="range" min="0" max="300" step="1" value="30" />
         <b id="speed-val">1.0×</b>
       </label>

@@ -1,6 +1,6 @@
-# main ga har push bo'lganda saytni GitHub Pages ga chiqaradi.
+# Publishes the site to GitHub Pages on every push to main.
 #
-# Bir martalik sozlash: GitHub'da Settings → Pages → Source = "GitHub Actions".
+# One-time setup: in GitHub, Settings → Pages → Source = "GitHub Actions".
 name: Deploy
 
 on:

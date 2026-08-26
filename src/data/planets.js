@@ -1,21 +1,24 @@
-// Sahna miqyosi haqiqiy emas — aks holda Neptun ekrandan million marta uzoqda
-// bo'lardi. O'lchamlar va masofalar ko'rish uchun qulay qilib siqilgan,
-// lekin tartib, nisbat va ma'lumotlar haqiqiy.
+// Physical layout of the scene. All display text lives in `src/i18n/` — this
+// file holds only numbers, colours and texture parameters, so adding a
+// language never means touching the simulation.
+//
+// The scale is not real. At true scale Neptune would sit millions of screens
+// away, so sizes and distances are compressed for viewing. Ordering, relative
+// proportions and the quoted figures are real.
 
 export const SUN_RADIUS = 12;
 
-// Tezlik qiymatlari Yerga nisbatan berilgan (Yer = 1). TIME_RATE ularni
-// haqiqiy soniyalarga bog'laydi: 1.0x tezlikda Yerning bir yili ~45 soniya.
+// Orbital speeds are relative to Earth (Earth = 1). TIME_RATE ties them to
+// wall-clock seconds: at 1.0x speed one Earth year takes ~45 seconds.
 export const TIME_RATE = 1 / 45;
 
-// Paneldagi raqamlar NASA ning ochiq ma'lumot sahifalariga tayanadi. Har bir
-// jism paneliga o'sha sahifaga havola chiqadi — o'qituvchi darsda manbani
-// ko'rsata olishi uchun.
+// The figures shown in the panels are based on NASA's public fact pages, and
+// every body links to its own page so a teacher can show the source in class.
 //
-// Manzillar bir qolipda emas (ba'zisi `/facts/`, ba'zisi `/venus-facts/`),
-// shuning uchun ular qo'lda yozilgan. Eski `nssdc.gsfc.nasa.gov/planetary/
-// factsheet/` sahifalari endi ishlamaydi: ular umumiy NSSDC sahifasiga
-// yo'naltiriladi, ya'ni o'quvchi kerakli raqamlarni topa olmaydi.
+// The URLs do not follow one pattern (some are `/facts/`, some
+// `/venus-facts/`), so they are written out by hand. The old
+// `nssdc.gsfc.nasa.gov/planetary/factsheet/` pages no longer work: they now
+// redirect to a generic NSSDC landing page where the figures cannot be found.
 const NASA = {
   sun: 'https://science.nasa.gov/sun/facts/',
   mercury: 'https://science.nasa.gov/mercury/facts/',
@@ -29,30 +32,16 @@ const NASA = {
 };
 
 export const SUN = {
-  key: 'quyosh',
-  name: 'Quyosh',
-  kind: 'YULDUZ',
+  key: 'sun',
   color: '#ffb454',
   radius: SUN_RADIUS,
   focusDist: 52,
-  sub: 'G — sinf sariq mitti. Butun tizim massasining 99.86 foizi shu yerda.',
-  facts: [
-    ['Diametri', '1 392 700 km'],
-    ['Sirt harorati', '≈ 5 500 °C'],
-    ['Markaz harorati', '≈ 15 000 000 °C'],
-    ['Yoshi', '≈ 4.6 mlrd yil'],
-    ['Yerdan masofa', '149.6 mln km'],
-  ],
-  fact:
-    "Har soniyada 600 million tonna vodorodni geliyga aylantiradi. Undan chiqqan yorug'lik Yergacha 8 daqiqa 20 soniyada yetib keladi.",
   source: NASA.sun,
 };
 
 export const PLANETS = [
   {
-    key: 'merkuriy',
-    name: 'Merkuriy',
-    kind: 'SAYYORA',
+    key: 'mercury',
     color: '#9a8f88',
     radius: 1.05,
     orbit: 26,
@@ -75,23 +64,10 @@ export const PLANETS = [
       ],
     },
     material: { roughness: 0.95, metalness: 0.02, bumpScale: 0.045 },
-    sub: "Quyoshga eng yaqin va tizimdagi eng kichik sayyora. Atmosferasi deyarli yo'q.",
-    facts: [
-      ['Diametri', '4 879 km'],
-      ['Quyoshdan', '57.9 mln km'],
-      ['Bir yili', '88 Yer kuni'],
-      ['Bir sutkasi', '58.6 Yer kuni'],
-      ["Yo'ldoshlari", '0'],
-      ['Harorati', '−173 … +427 °C'],
-    ],
-    fact:
-      "Atmosfera issiqlikni ushlab tura olmaydi: kunduzi sirt qo'rg'oshinni eritadigan darajada qiziydi, kechasi esa −170 °C gacha muzlaydi.",
     source: NASA.mercury,
   },
   {
-    key: 'venera',
-    name: 'Venera',
-    kind: 'SAYYORA',
+    key: 'venus',
     color: '#e8c07a',
     radius: 2.05,
     orbit: 37,
@@ -116,23 +92,10 @@ export const PLANETS = [
     },
     material: { roughness: 0.85, metalness: 0.0, bumpScale: 0.02 },
     atmosphere: { color: '#ffd9a0', opacity: 0.28, scale: 1.035 },
-    sub: "Tizimdagi eng issiq sayyora. Qalin karbonat angidrid atmosferasi issiqlikni qamab qo'ygan.",
-    facts: [
-      ['Diametri', '12 104 km'],
-      ['Quyoshdan', '108.2 mln km'],
-      ['Bir yili', '225 Yer kuni'],
-      ['Bir sutkasi', '243 Yer kuni'],
-      ["Yo'ldoshlari", '0'],
-      ['Harorati', '+464 °C'],
-    ],
-    fact:
-      "O'z o'qi atrofida teskari yo'nalishda aylanadi — Venerada Quyosh g'arbdan chiqib, sharqda botadi. Bir sutkasi bir yilidan uzun.",
     source: NASA.venus,
   },
   {
-    key: 'yer',
-    name: 'Yer',
-    kind: 'SAYYORA',
+    key: 'earth',
     color: '#4a90d9',
     radius: 2.2,
     orbit: 50,
@@ -145,25 +108,12 @@ export const PLANETS = [
     material: { roughness: 0.72, metalness: 0.05, bumpScale: 0.06 },
     atmosphere: { color: '#6ea8ff', opacity: 0.34, scale: 1.028 },
     moons: [
-      { name: 'Oy', radius: 0.6, orbit: 4.6, speed: 13, color: 0xbdb8ae, seed: 5150 },
+      { key: 'moon', radius: 0.6, orbit: 4.6, speed: 13, color: 0xbdb8ae, seed: 5150 },
     ],
-    sub: "Hozircha hayot borligi tasdiqlangan yagona osmon jismi. Sirtining 71 foizi suv.",
-    facts: [
-      ['Diametri', '12 742 km'],
-      ['Quyoshdan', '149.6 mln km'],
-      ['Bir yili', '365.25 kun'],
-      ['Bir sutkasi', '23 soat 56 daq'],
-      ["Yo'ldoshlari", '1 (Oy)'],
-      ["O'rtacha harorat", '+15 °C'],
-    ],
-    fact:
-      "O'q qiyaligi 23.4° — fasllar aynan shundan. Oy bu qiyalikni barqaror ushlab turadi, aks holda iqlim asrlar davomida keskin o'zgarib turardi.",
     source: NASA.earth,
   },
   {
     key: 'mars',
-    name: 'Mars',
-    kind: 'SAYYORA',
     color: '#d1603f',
     radius: 1.5,
     orbit: 66,
@@ -190,26 +140,13 @@ export const PLANETS = [
     material: { roughness: 0.92, metalness: 0.02, bumpScale: 0.055 },
     atmosphere: { color: '#ff9d70', opacity: 0.14, scale: 1.03 },
     moons: [
-      { name: 'Fobos', radius: 0.22, orbit: 2.6, speed: 26, color: 0x8a7f74, seed: 611 },
-      { name: 'Deymos', radius: 0.15, orbit: 3.7, speed: 16, color: 0x9a8f84, seed: 612 },
+      { key: 'phobos', radius: 0.22, orbit: 2.6, speed: 26, color: 0x8a7f74, seed: 611 },
+      { key: 'deimos', radius: 0.15, orbit: 3.7, speed: 16, color: 0x9a8f84, seed: 612 },
     ],
-    sub: "Qizil sayyora. Qutblarida muz, sirtida qurib qolgan daryo o'zanlari bor.",
-    facts: [
-      ['Diametri', '6 779 km'],
-      ['Quyoshdan', '227.9 mln km'],
-      ['Bir yili', '687 Yer kuni'],
-      ['Bir sutkasi', '24 soat 37 daq'],
-      ["Yo'ldoshlari", "2 (Fobos, Deymos)"],
-      ["O'rtacha harorat", '−63 °C'],
-    ],
-    fact:
-      "Quyosh tizimidagi eng baland tog' — Olimp vulqoni shu yerda: balandligi 21 km, ya'ni Everestdan qariyb 2.5 barobar baland.",
     source: NASA.mars,
   },
   {
-    key: 'yupiter',
-    name: 'Yupiter',
-    kind: 'GAZ GIGANTI',
+    key: 'jupiter',
     color: '#d8a26a',
     radius: 6.4,
     orbit: 104,
@@ -241,28 +178,15 @@ export const PLANETS = [
     material: { roughness: 1.0, metalness: 0.0 },
     atmosphere: { color: '#ffd9ab', opacity: 0.16, scale: 1.022 },
     moons: [
-      { name: 'Io', radius: 0.34, orbit: 9.4, speed: 9, color: 0xd8c268, seed: 701 },
-      { name: 'Yevropa', radius: 0.3, orbit: 11.6, speed: 6.4, color: 0xd6cbb4, seed: 702 },
-      { name: 'Ganimed', radius: 0.5, orbit: 14.2, speed: 4.6, color: 0xa2968a, seed: 703 },
-      { name: 'Kallisto', radius: 0.45, orbit: 17.4, speed: 3.2, color: 0x7c7168, seed: 704 },
+      { key: 'io', radius: 0.34, orbit: 9.4, speed: 9, color: 0xd8c268, seed: 701 },
+      { key: 'europa', radius: 0.3, orbit: 11.6, speed: 6.4, color: 0xd6cbb4, seed: 702 },
+      { key: 'ganymede', radius: 0.5, orbit: 14.2, speed: 4.6, color: 0xa2968a, seed: 703 },
+      { key: 'callisto', radius: 0.45, orbit: 17.4, speed: 3.2, color: 0x7c7168, seed: 704 },
     ],
-    sub: "Tizimdagi eng katta sayyora — qolgan hamma sayyoralar birgalikda undan yengil.",
-    facts: [
-      ['Diametri', '139 820 km'],
-      ['Quyoshdan', '778.5 mln km'],
-      ['Bir yili', '11.9 Yer yili'],
-      ['Bir sutkasi', '9 soat 56 daq'],
-      ["Yo'ldoshlari", "95 dan ortiq"],
-      ['Bulut harorati', '−145 °C'],
-    ],
-    fact:
-      "Katta Qizil Dog' — kamida 350 yildan beri to'xtamayotgan bo'ron. Uning ichiga butun Yer bemalol sig'adi.",
     source: NASA.jupiter,
   },
   {
     key: 'saturn',
-    name: 'Saturn',
-    kind: 'GAZ GIGANTI',
     color: '#e3c98f',
     radius: 5.4,
     orbit: 142,
@@ -292,26 +216,13 @@ export const PLANETS = [
     atmosphere: { color: '#ffeec2', opacity: 0.14, scale: 1.022 },
     ring: { inner: 1.35, outer: 2.35 },
     moons: [
-      { name: 'Titan', radius: 0.5, orbit: 12.5, speed: 5, color: 0xd8a24e, seed: 801 },
-      { name: 'Rhea', radius: 0.26, orbit: 9.2, speed: 7.6, color: 0xbfb6a8, seed: 802 },
+      { key: 'titan', radius: 0.5, orbit: 12.5, speed: 5, color: 0xd8a24e, seed: 801 },
+      { key: 'rhea', radius: 0.26, orbit: 9.2, speed: 7.6, color: 0xbfb6a8, seed: 802 },
     ],
-    sub: "Halqalari 280 000 km ga cho'zilgan, lekin qalinligi ba'zi joyda atigi 10 metr.",
-    facts: [
-      ['Diametri', '116 460 km'],
-      ['Quyoshdan', '1.43 mlrd km'],
-      ['Bir yili', '29.5 Yer yili'],
-      ['Bir sutkasi', '10 soat 42 daq'],
-      ["Yo'ldoshlari", '146 dan ortiq'],
-      ['Bulut harorati', '−178 °C'],
-    ],
-    fact:
-      "Zichligi suvnikidan kam. Agar shunchalik katta okean topilsa, Saturn unda cho'kmasdan suzib yurardi.",
     source: NASA.saturn,
   },
   {
-    key: 'uran',
-    name: 'Uran',
-    kind: 'MUZ GIGANTI',
+    key: 'uranus',
     color: '#8fd3de',
     radius: 3.6,
     orbit: 178,
@@ -338,23 +249,10 @@ export const PLANETS = [
     material: { roughness: 1.0, metalness: 0.0 },
     atmosphere: { color: '#a8ecf5', opacity: 0.24, scale: 1.03 },
     ring: { inner: 1.5, outer: 1.85, opacity: 0.3, vertical: true },
-    sub: "Yonboshlab aylanadigan muz giganti. O'q qiyaligi 98 daraja.",
-    facts: [
-      ['Diametri', '50 724 km'],
-      ['Quyoshdan', '2.87 mlrd km'],
-      ['Bir yili', '84 Yer yili'],
-      ['Bir sutkasi', '17 soat 14 daq'],
-      ["Yo'ldoshlari", '28'],
-      ['Harorati', '−224 °C'],
-    ],
-    fact:
-      "Deyarli yotgan holda aylanadi — qutblari navbat bilan 42 yil yorug'likda, keyin 42 yil zulmatda qoladi. Tizimdagi eng past harorat ham shu yerda qayd etilgan.",
     source: NASA.uranus,
   },
   {
-    key: 'neptun',
-    name: 'Neptun',
-    kind: 'MUZ GIGANTI',
+    key: 'neptune',
     color: '#4a6fd8',
     radius: 3.45,
     orbit: 212,
@@ -383,19 +281,8 @@ export const PLANETS = [
     material: { roughness: 1.0, metalness: 0.0 },
     atmosphere: { color: '#6f9dff', opacity: 0.26, scale: 1.03 },
     moons: [
-      { name: 'Triton', radius: 0.4, orbit: 7.6, speed: 6, color: 0xcfd6dc, seed: 901 },
+      { key: 'triton', radius: 0.4, orbit: 7.6, speed: 6, color: 0xcfd6dc, seed: 901 },
     ],
-    sub: "Eng uzoq sayyora. Ko'k rangi atmosferadagi metandan.",
-    facts: [
-      ['Diametri', '49 244 km'],
-      ['Quyoshdan', '4.5 mlrd km'],
-      ['Bir yili', '165 Yer yili'],
-      ['Bir sutkasi', '16 soat 6 daq'],
-      ["Yo'ldoshlari", '16'],
-      ['Harorati', '−214 °C'],
-    ],
-    fact:
-      "Shamol tezligi 2 100 km/soatgacha yetadi — tizimdagi eng kuchli bo'ronlar. Neptun teleskopda emas, avval qog'ozda — matematik hisob-kitob orqali topilgan.",
     source: NASA.neptune,
   },
 ];

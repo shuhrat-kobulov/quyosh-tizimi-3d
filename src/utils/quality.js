@@ -1,15 +1,14 @@
-// Qurilma imkoniyatiga qarab sahna og'irligini tanlaydi.
+// Picks how heavy the scene may be, based on what the device can handle.
 //
-// Sabab: telefonlarning katta qismida bloom + 2 200 ta asteroid + 1024×512
-// teksturalar 60 fps bermaydi. Shuning uchun yuklashdan oldin bir marta
-// "past / o'rta / yuqori" daraja tanlanadi, keyin main.js kerak bo'lsa
-// o'lchangan fps ga qarab bir pog'ona pastga tushiradi.
+// Why: on most phones bloom plus 2,200 asteroids plus 1024x512 textures will
+// not hold 60 fps. So a "low / medium / high" tier is chosen once before
+// loading, and main.js drops it one step later if the measured fps falls short.
 //
-// Majburan tanlash: ?sifat=past | orta | yuqori  (sinash uchun qulay)
+// Force a tier for testing: ?quality=low | medium | high
 
 const PRESETS = {
-  past: {
-    tier: 'past',
+  low: {
+    tier: 'low',
     pixelRatio: 1,
     bloom: false,
     textureScale: 0.5,
@@ -17,8 +16,8 @@ const PRESETS = {
     beltCount: 550,
     segScale: 0.6,
   },
-  orta: {
-    tier: 'orta',
+  medium: {
+    tier: 'medium',
     pixelRatio: 1.5,
     bloom: true,
     textureScale: 0.75,
@@ -26,8 +25,8 @@ const PRESETS = {
     beltCount: 1200,
     segScale: 0.8,
   },
-  yuqori: {
-    tier: 'yuqori',
+  high: {
+    tier: 'high',
     pixelRatio: 2,
     bloom: true,
     textureScale: 1,
@@ -37,44 +36,50 @@ const PRESETS = {
   },
 };
 
-const ALIASES = { low: 'past', mid: 'orta', medium: 'orta', high: 'yuqori', "o'rta": 'orta' };
+// `past`, `orta` and `yuqori` are the Uzbek tier names this project used before
+// the codebase moved to English; links using them still work.
+const ALIASES = {
+  mid: 'medium',
+  past: 'low', orta: 'medium', "o'rta": 'medium', yuqori: 'high',
+};
 
 function pickTier() {
-  const q = new URLSearchParams(location.search).get('sifat') ?? '';
-  const forced = ALIASES[q.toLowerCase()] ?? q.toLowerCase();
+  const q = new URLSearchParams(location.search);
+  const raw = (q.get('quality') ?? q.get('sifat') ?? '').trim().toLowerCase();
+  const forced = ALIASES[raw] ?? raw;
   if (PRESETS[forced]) return forced;
 
   const nav = navigator;
   const cores = nav.hardwareConcurrency ?? 4;
-  const mem = nav.deviceMemory ?? 4;          // faqat Chrome'da bor
+  const mem = nav.deviceMemory ?? 4;          // Chrome only
   const coarse = matchMedia('(pointer: coarse)').matches;
   const narrow = Math.min(screen.width, screen.height) <= 820;
   const mobile = coarse && narrow;
 
-  // Ballar: past ball = zaif qurilma
+  // Score: a low score means a weak device
   let score = 0;
   score += cores >= 8 ? 2 : cores >= 6 ? 1 : 0;
   score += mem >= 8 ? 2 : mem >= 6 ? 1 : 0;
   score += mobile ? 0 : 2;
 
-  if (score <= 1) return 'past';
-  if (score <= 3) return 'orta';
-  return 'yuqori';
+  if (score <= 1) return 'low';
+  if (score <= 3) return 'medium';
+  return 'high';
 }
 
 export const QUALITY = { ...PRESETS[pickTier()] };
 
-// Bir pog'ona pastga tushirish (fps yetmasa main.js chaqiradi).
+// Drop one step (called by main.js when the frame rate falls short).
 export function lowerTier() {
-  if (QUALITY.tier === 'past') return false;
-  const next = QUALITY.tier === 'yuqori' ? 'orta' : 'past';
-  // Tekstura o'lchami va jism sonlari allaqachon qurilgan — ularni endi
-  // o'zgartirib bo'lmaydi, shuning uchun faqat kadr bahosini pasaytiramiz.
+  if (QUALITY.tier === 'low') return false;
+  const next = QUALITY.tier === 'high' ? 'medium' : 'low';
+  // Texture sizes and object counts are already built and cannot be changed
+  // now, so only the per-frame cost comes down.
   QUALITY.tier = next;
   QUALITY.pixelRatio = PRESETS[next].pixelRatio;
   QUALITY.bloom = PRESETS[next].bloom;
   return true;
 }
 
-// Segment sonini darajaga moslash (juft son, kamida 8 ta)
+// Fits a segment count to the tier (even number, at least 8).
 export const seg = (n) => Math.max(8, Math.round((n * QUALITY.segScale) / 2) * 2);

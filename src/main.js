@@ -11,30 +11,35 @@ import { QUALITY, lowerTier } from './utils/quality.js';
 import { createSun } from './objects/sun.js';
 import { createPlanets } from './objects/planets.js';
 import { createStarfield, createNebulae, createAsteroidBelt } from './objects/space.js';
+import * as I18N from './i18n/index.js';
 import * as HUD from './ui/hud.js';
 
 /* ------------------------------------------------------------------ */
-/*  Renderer, sahna, kamera                                            */
+/*  Language                                                           */
+/* ------------------------------------------------------------------ */
+// Applied before anything else so the loading screen and any fatal error
+// message are already in the right language.
+HUD.applyStaticStrings();
+
+/* ------------------------------------------------------------------ */
+/*  Renderer, scene, camera                                            */
 /* ------------------------------------------------------------------ */
 const canvas = document.getElementById('scene');
 
-// WebGL bo'lmasa (eski brauzer, o'chirilgan grafika) — oq ekran o'rniga xabar.
-// Bu yerdagi `throw` modul bajarilishini to'xtatadi: xabar ekranda qoladi.
+// No WebGL (old browser, graphics disabled) — a message instead of a blank
+// page. The `throw` stops module execution so the message stays on screen.
 if (!HUD.hasWebGL()) {
-  HUD.showFatal(
-    "Brauzeringiz 3D ni qo'llab-quvvatlamadi",
-    "Bu sahifa WebGL texnologiyasiga muhtoj. Chrome, Safari yoki Firefox ning yangi versiyasida oching, yoki brauzer sozlamalarida grafik tezlashtirishni (hardware acceleration) yoqing."
-  );
-  throw new Error('WebGL mavjud emas');
+  HUD.showFatal(I18N.t('errNoWebglTitle'), I18N.t('errNoWebglText'));
+  throw new Error('WebGL is not available');
 }
 
-setTextureScale(QUALITY.textureScale); // teksturalar shu daraja bilan chiziladi
+setTextureScale(QUALITY.textureScale); // textures are drawn at this tier
 
 let renderer;
 try {
   renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
 } catch (err) {
-  HUD.showFatal("3D dvigatelni ishga tushirib bo'lmadi", String(err?.message ?? err));
+  HUD.showFatal(I18N.t('errInitTitle'), String(err?.message ?? err));
   throw err;
 }
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, QUALITY.pixelRatio));
@@ -43,17 +48,17 @@ renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.0;
 setAnisotropy(Math.min(8, renderer.capabilities.getMaxAnisotropy()));
 
-// Kontekst yo'qolsa (telefon xotirani tozalaganda bo'ladi) sabab aytiladi
+// Context loss happens when a phone reclaims video memory — say why.
 canvas.addEventListener('webglcontextlost', (e) => {
   e.preventDefault();
-  HUD.showFatal('Grafik ulanish uzildi', 'Qurilma video xotirani bo\'shatdi. Sahifani yangilang.');
+  HUD.showFatal(I18N.t('errContextTitle'), I18N.t('errContextText'));
 });
 
 const timer = new THREE.Timer();
-timer.connect(document); // tab almashtirilganda katta dt sakrashining oldini oladi
+timer.connect(document); // avoids a huge dt jump when returning to the tab
 
 const scene = new THREE.Scene();
-scene.add(new THREE.AmbientLight(0x9fb4ff, 0.14)); // yulduzlararo yorug'lik — soyalar butunlay qora bo'lmasin
+scene.add(new THREE.AmbientLight(0x9fb4ff, 0.14)); // starlight, so shadows are not pure black
 
 const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.5, 4000);
 camera.position.set(0, 420, 620);
@@ -70,8 +75,8 @@ controls.maxDistance = 800;
 /* ------------------------------------------------------------------ */
 /*  Post-processing (bloom)                                            */
 /* ------------------------------------------------------------------ */
-// Past darajada composer umuman qurilmaydi: bloom o'zining mip zanjiri bilan
-// zaif telefonda ham kadrni, ham video xotirani yeydi.
+// At the low tier the composer is never built: bloom's mip chain eats both
+// frame time and video memory on weak phones.
 let composer = null;
 let bloom = null;
 
@@ -81,9 +86,9 @@ function buildComposer() {
   composer.addPass(new RenderPass(scene, camera));
   bloom = new UnrealBloomPass(
     new THREE.Vector2(window.innerWidth, window.innerHeight),
-    0.55, // kuch
+    0.55, // strength
     0.55, // radius
-    0.85  // ostona
+    0.85  // threshold
   );
   composer.addPass(bloom);
   composer.addPass(new OutputPass());
@@ -97,68 +102,88 @@ function render() {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Sahnani yig'ish                                                    */
+/*  Body content: physical data + translated text                      */
+/* ------------------------------------------------------------------ */
+const SOURCES = Object.fromEntries(
+  [SUN, ...PLANETS].map((b) => [b.key, b.source])
+);
+
+// The panel needs both halves: the numbers live in the locale files, the
+// source URL lives with the physical data.
+function infoFor(key) {
+  return { ...I18N.body(key), source: SOURCES[key] };
+}
+
+/* ------------------------------------------------------------------ */
+/*  Building the scene                                                 */
 /* ------------------------------------------------------------------ */
 const OVERVIEW_OFFSET = new THREE.Vector3(0, 108, 232);
 
 let sun, system, stars, belt;
-let labels, setNavActive;
+let labels, setNavActive, setLangActive;
 const pickable = [];
 
 async function build() {
-  HUD.setLoaderProgress(0.05, "Yulduzlar yoqilmoqda…");
+  HUD.setLoaderProgress(0.05, I18N.t('loaderStars'));
   await new Promise((r) => setTimeout(r, 30));
 
   stars = createStarfield(QUALITY.starCount, renderer.getPixelRatio());
   scene.add(stars.points);
   scene.add(createNebulae());
 
-  HUD.setLoaderProgress(0.14, 'Quyosh yoqilmoqda…');
+  HUD.setLoaderProgress(0.14, I18N.t('loaderSun'));
   await new Promise((r) => setTimeout(r, 30));
 
   sun = createSun(SUN_RADIUS);
   scene.add(sun.group);
   pickable.push(sun.core);
 
-  system = await createPlanets(scene, (f, text) => HUD.setLoaderProgress(0.18 + f * 0.68, text));
+  // createPlanets reports the body key, not a finished sentence — the wording
+  // is this layer's job so the builder stays language-free.
+  system = await createPlanets(scene, (f, key) =>
+    HUD.setLoaderProgress(0.18 + f * 0.68, I18N.t('loaderBody', { name: I18N.name(key) }))
+  );
   pickable.push(...system.pickable);
 
-  HUD.setLoaderProgress(0.92, 'Asteroidlar kamari sochilmoqda…');
+  HUD.setLoaderProgress(0.92, I18N.t('loaderBelt'));
   await new Promise((r) => setTimeout(r, 30));
 
   belt = createAsteroidBelt(QUALITY.beltCount);
   scene.add(belt.mesh);
 
-  /* Nomlar va tugmalar */
+  /* Labels and buttons */
   const entries = [
-    { key: 'quyosh', name: 'Quyosh', radius: SUN_RADIUS, getPos: (v) => v.set(0, 0, 0) },
+    { key: SUN.key, name: I18N.name(SUN.key), radius: SUN_RADIUS, getPos: (v) => v.set(0, 0, 0) },
     ...system.bodies.map((b) => ({
       key: b.data.key,
-      name: b.data.name,
+      name: I18N.name(b.data.key),
       radius: b.data.radius * (b.data.ring ? b.data.ring.outer : 1),
       getPos: (v) => b.holder.getWorldPosition(v),
     })),
   ];
   labels = HUD.createLabels(entries, focusByKey);
 
-  setNavActive = HUD.buildNav(
-    [{ key: 'quyosh', name: 'Quyosh', color: SUN.color },
-     ...PLANETS.map((p) => ({ key: p.key, name: p.name, color: p.color }))],
-    focusByKey
-  );
+  buildNav();
 
-  HUD.setLoaderProgress(1, 'Tayyor');
+  HUD.setLoaderProgress(1, I18N.t('loaderReady'));
   await new Promise((r) => setTimeout(r, 260));
   HUD.hideLoader();
 
-  // Havolada sayyora ko'rsatilgan bo'lsa (?sayyora=mars) — o'shanga uchamiz
+  // If the link names a body (?planet=mars) fly straight there
   const linked = keyFromUrl();
   if (linked) focusByKey(linked, 2.6);
-  else goOverview(2.6); // ochilish paytidagi kirish harakati
+  else goOverview(2.6); // opening move
+}
+
+function buildNav() {
+  setNavActive = HUD.buildNav(
+    [SUN, ...PLANETS].map((b) => ({ key: b.key, name: I18N.name(b.key), color: b.color })),
+    focusByKey
+  );
 }
 
 /* ------------------------------------------------------------------ */
-/*  Kamera: fokus va o'tish                                            */
+/*  Camera: focus and transitions                                      */
 /* ------------------------------------------------------------------ */
 const trans = { active: false, t: 0, dur: 1.6, start: 0, from: new THREE.Vector3(), fromTarget: new THREE.Vector3() };
 const focusOffset = new THREE.Vector3();
@@ -167,26 +192,26 @@ const desiredPos = new THREE.Vector3();
 const delta = new THREE.Vector3();
 const prevFocusPos = new THREE.Vector3();
 
-let focused = null;   // { key, getPos, dist } yoki null (umumiy ko'rinish)
+let focused = null;   // { key, getPos, dist } or null (overview)
 let following = false;
 
 const easeInOut = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 
-// Sayyoradan sayyoraga uchganda butun ko'rish maydoni siljiydi — vestibulyar
-// sezgirligi bor odamda bu ko'ngil aynishiga olib keladi. Tizim sozlamasida
-// "harakatni kamaytirish" yoqilgan bo'lsa, kamera uchmay, darrov joyiga
-// o'tadi. Sayyoralarning aylanishiga tegilmaydi — u bezak emas, mazmun.
-// `matches` har safar o'qiladi: foydalanuvchi sozlamani yo'lakay o'zgartirsa
-// ham sahifani yangilash shart bo'lmasin.
+// Flying from body to body sweeps the whole field of view, which can trigger
+// nausea in people sensitive to vestibular motion. When the system asks for
+// reduced motion the camera cuts straight to its destination instead. Planet
+// rotation is left alone — that is the subject, not decoration.
+// `matches` is read each time so changing the setting mid-session works
+// without a reload.
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
 function startTransition(dur) {
   trans.active = true;
   trans.t = 0;
-  // Nol emas, juda kichik son: updateCamera da 0/0 = NaN bo'lib qolmasin.
+  // Not zero: updateCamera would divide 0 by 0 and get NaN.
   trans.dur = reduceMotion.matches ? 0.001 : dur;
-  // Kadrlar tezligiga emas, real vaqtga bog'laymiz — sekin qurilmada ham
-  // o'tish o'zi belgilangan sekundlarda tugaydi.
+  // Tied to wall-clock time rather than frame count, so the move takes the
+  // same number of seconds on a slow device.
   trans.start = timer.getElapsed();
   trans.from.copy(camera.position);
   trans.fromTarget.copy(controls.target);
@@ -197,21 +222,21 @@ function focusOn(target, dur = 1.7) {
   focused = target;
   target.getPos(tmpTarget);
 
-  // Quyosh tomonidan, biroz yon va yuqoridan yaqinlashamiz —
-  // shunda sayyoraning yoritilgan yuzi ko'rinadi, tungi tomoni emas.
+  // Approach from the sunlit side, slightly off to one side and above, so the
+  // lit face is what you see rather than the night side.
   const out = tmpTarget.lengthSq() > 1 ? tmpTarget.clone().normalize() : new THREE.Vector3(0.6, 0, 1).normalize();
   focusOffset
     .copy(out).multiplyScalar(-0.45)
-    .add(new THREE.Vector3(0, 0.55, 0)) // biroz tepadan — Saturn halqalari yaxshi ko'rinsin
+    .add(new THREE.Vector3(0, 0.55, 0)) // a little from above — Saturn's rings read better
     .add(new THREE.Vector3(-out.z, 0, out.x).multiplyScalar(0.7))
     .normalize()
     .multiplyScalar(target.dist);
 
   startTransition(dur);
-  HUD.showPanel(target.info);
+  HUD.showPanel(infoFor(target.key));
   setNavActive?.(target.key);
   labels?.setActive(target.key);
-  syncUrl(target.key);
+  syncUrl();
 }
 
 function goOverview(dur = 1.6) {
@@ -221,12 +246,12 @@ function goOverview(dur = 1.6) {
   HUD.hidePanel();
   setNavActive?.(null);
   labels?.setActive(null);
-  syncUrl(null);
+  syncUrl();
 }
 
 function focusByKey(key, dur) {
-  if (key === 'quyosh') {
-    focusOn({ key: 'quyosh', dist: SUN.focusDist, info: SUN, getPos: (v) => v.set(0, 0, 0) }, dur);
+  if (key === SUN.key) {
+    focusOn({ key: SUN.key, dist: SUN.focusDist, getPos: (v) => v.set(0, 0, 0) }, dur);
     return;
   }
   const b = system.bodies.find((x) => x.data.key === key);
@@ -234,37 +259,40 @@ function focusByKey(key, dur) {
   focusOn({
     key,
     dist: b.focusDist,
-    info: b.data,
     getPos: (v) => b.holder.getWorldPosition(v),
   }, dur);
 }
 
 /* ------------------------------------------------------------------ */
-/*  Havola: ?sayyora=mars — to'g'ridan-to'g'ri o'sha sayyoraga          */
+/*  Links: ?planet=mars&lang=ru                                        */
 /* ------------------------------------------------------------------ */
-const KEYS = new Set(['quyosh', ...PLANETS.map((p) => p.key)]);
+const KEYS = new Set([SUN.key, ...PLANETS.map((p) => p.key)]);
 
-// Inglizcha nomlar ham ishlasin — havola begona joyga tushsa ham ochiladi
-const ALIASES = {
-  sun: 'quyosh', mercury: 'merkuriy', venus: 'venera', earth: 'yer',
-  jupiter: 'yupiter', uranus: 'uran', neptune: 'neptun',
+// Links shared before the codebase moved to English keys used Uzbek ones, and
+// teachers hand those links out. They must keep working.
+const LEGACY_KEYS = {
+  quyosh: 'sun', merkuriy: 'mercury', venera: 'venus', yer: 'earth',
+  yupiter: 'jupiter', uran: 'uranus', neptun: 'neptune',
 };
 
 function keyFromUrl() {
   const q = new URLSearchParams(location.search);
-  const raw = (q.get('sayyora') ?? q.get('planet') ?? '').trim().toLowerCase();
-  const key = ALIASES[raw] ?? raw;
+  const raw = (q.get('planet') ?? q.get('sayyora') ?? '').trim().toLowerCase();
+  const key = LEGACY_KEYS[raw] ?? raw;
   return KEYS.has(key) ? key : null;
 }
 
-// Manzil qatorini fokusga moslab turadi — foydalanuvchi havolani shundoq
-// nusxalab yuborsa, qabul qiluvchi aynan shu sayyorani ko'radi.
-// replaceState: "orqaga" tugmasi tarixga to'lib ketmasin.
-function syncUrl(key) {
+// Keeps the address bar matching what is on screen, so copying the link and
+// sending it shows the recipient the same body in the same language.
+// Single writer for both parameters — focus changes and language changes both
+// come through here. replaceState so Back is not flooded with history entries.
+function syncUrl() {
   const url = new URL(location.href);
-  if (key) url.searchParams.set('sayyora', key);
-  else url.searchParams.delete('sayyora');
-  url.searchParams.delete('planet');
+  if (focused) url.searchParams.set('planet', focused.key);
+  else url.searchParams.delete('planet');
+  url.searchParams.set('lang', I18N.lang());
+  url.searchParams.delete('sayyora');
+  url.searchParams.delete('til');
   history.replaceState(null, '', url);
 }
 
@@ -286,8 +314,8 @@ function updateCamera(now) {
       prevFocusPos.copy(tmpTarget);
     }
   } else if (following && focused) {
-    // Sayyora orbitada siljiganda kamera u bilan birga siljiydi,
-    // lekin foydalanuvchi baribir erkin aylantira/yaqinlashtira oladi.
+    // As the planet moves along its orbit the camera moves with it, while you
+    // can still rotate and zoom freely.
     focused.getPos(tmpTarget);
     delta.subVectors(tmpTarget, prevFocusPos);
     camera.position.add(delta);
@@ -297,7 +325,7 @@ function updateCamera(now) {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Sichqoncha bilan tanlash                                           */
+/*  Picking with the pointer                                           */
 /* ------------------------------------------------------------------ */
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
@@ -330,7 +358,7 @@ canvas.addEventListener('pointermove', (e) => {
 });
 
 /* ------------------------------------------------------------------ */
-/*  Boshqaruv elementlari                                              */
+/*  Controls                                                           */
 /* ------------------------------------------------------------------ */
 let timeScale = 1;
 let paused = false;
@@ -343,9 +371,9 @@ speedEl.addEventListener('input', () => {
   speedVal.textContent = `${timeScale.toFixed(1)}×`;
 });
 
-// Telefonda ma'lumot paneli boshqaruv panelining ustiga qo'yiladi. Tugmalar
-// qatori ekran eniga qarab bir necha qatorga o'raladi, shuning uchun uning
-// balandligini o'lchab CSS ga beramiz (style.css dagi `--controls-h`).
+// On phones the info panel sits above the control bar. How tall that bar is
+// depends on how many rows the buttons wrap into, so measure it and hand the
+// number to CSS (`--controls-h` in style.css).
 const controlsEl = document.getElementById('controls');
 new ResizeObserver(([entry]) => {
   const h = entry.borderBoxSize?.[0]?.blockSize ?? entry.contentRect.height;
@@ -368,10 +396,17 @@ function toggleLabels() {
   labels.setVisible(on);
 }
 
+// The pause button's caption depends on state, so it is written from JS rather
+// than carrying a `data-i18n` attribute — a language switch would otherwise
+// reset a paused button to "Pause".
+function syncPauseButton() {
+  btnPause.textContent = paused ? I18N.t('btnResume') : I18N.t('btnPause');
+}
+
 function togglePause() {
   paused = !paused;
   btnPause.classList.toggle('active', paused);
-  btnPause.textContent = paused ? '▶ Davom' : '⏸ Pauza';
+  syncPauseButton();
 }
 
 btnOrbits.addEventListener('click', () => system && toggleOrbits());
@@ -382,15 +417,15 @@ document.getElementById('panel-close').addEventListener('click', () => goOvervie
 
 window.addEventListener('keydown', (e) => {
   if (!system) return;
-  // Fokus slayderda yoki matn maydonida bo'lsa, tezkor tugmalarga umuman
-  // tegmaymiz — o'q tugmalari o'sha yerda ishlashi kerak.
+  // When focus is in the slider or a text field, leave the shortcuts alone —
+  // the arrow keys belong to that control.
   if (e.target?.closest?.('input, select, textarea')) return;
 
-  // "Bo'sh joy" fokusdagi tugmani bosadi. Shuning uchun fokus tugmada turganda
-  // uni pauzaga o'g'irlamaymiz, aks holda klaviatura bilan yuruvchi odam
-  // tugmani umuman bosa olmaydi. Raqam va harf tugmalari esa tugma bilan
-  // to'qnashmaydi — sichqoncha bilan tugma bosilgandan keyin ham (fokus o'sha
-  // tugmada qoladi) `1`…`8`, `Q`, `O`, `L`, `Esc` ishlayverishi kerak.
+  // Space activates the focused button. So when focus is on a button we do not
+  // steal it for pause, otherwise a keyboard user could never press the button
+  // at all. Number and letter keys do not clash with buttons — after a mouse
+  // click (which leaves focus on the button) `1`…`8`, `Q`, `O`, `L` and `Esc`
+  // must keep working.
   if (e.code === 'Space') {
     if (e.target?.closest?.('button, a[href]')) return;
     e.preventDefault();
@@ -400,7 +435,7 @@ window.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' || e.key === '0') { goOverview(); return; }
   if (e.key.toLowerCase() === 'o') { toggleOrbits(); return; }
   if (e.key.toLowerCase() === 'l') { toggleLabels(); return; }
-  if (e.key.toLowerCase() === 'q') { focusByKey('quyosh'); return; }
+  if (e.key.toLowerCase() === 'q') { focusByKey(SUN.key); return; }
   const n = Number(e.key);
   if (n >= 1 && n <= PLANETS.length) focusByKey(PLANETS[n - 1].key);
 });
@@ -416,18 +451,43 @@ window.addEventListener('resize', () => {
 });
 
 /* ------------------------------------------------------------------ */
-/*  Kadr tezligini kuzatish                                            */
+/*  Switching language                                                 */
 /* ------------------------------------------------------------------ */
-// Statik tekshiruv qurilmani har doim ham to'g'ri baholay olmaydi (masalan,
-// yangi telefon, lekin brauzer dasturiy renderingda ishlayapti). Shuning uchun
-// birinchi sekundlarda haqiqiy fps o'lchanadi va yetmasa daraja bir pog'ona
-// pasaytiriladi — bir marta, sahna "sakrab" turmasligi uchun.
+// Nothing in the 3D scene depends on language, so this only redraws text. The
+// camera, the simulation clock and the current selection all stay put.
+setLangActive = HUD.buildLangSwitcher(I18N.setLanguage);
+setLangActive(I18N.lang());
+
+I18N.onLanguageChange(() => {
+  HUD.applyStaticStrings();
+  setLangActive(I18N.lang());
+  syncPauseButton();
+
+  labels?.setNames(I18N.name);
+  if (system) {
+    buildNav();
+    setNavActive(focused ? focused.key : null);
+  }
+  if (focused) HUD.showPanel(infoFor(focused.key));
+
+  syncUrl();
+});
+
+syncPauseButton();
+
+/* ------------------------------------------------------------------ */
+/*  Frame-rate watchdog                                                */
+/* ------------------------------------------------------------------ */
+// The static check cannot always judge a device correctly (a new phone whose
+// browser fell back to software rendering, say). So real fps is measured over
+// the first seconds and the tier drops one step if it falls short — once only,
+// so the scene does not oscillate.
 let fpsFrames = 0;
 let fpsTime = 0;
 let downgraded = false;
 
 function watchFps(dt) {
-  if (downgraded || trans.active) return; // o'tish paytida o'lchash noto'g'ri
+  if (downgraded || trans.active) return; // measuring during a transition is misleading
   fpsFrames++;
   fpsTime += dt;
   if (fpsFrames < 90) return;
@@ -448,11 +508,11 @@ function watchFps(dt) {
   } else {
     composer?.setPixelRatio(renderer.getPixelRatio());
   }
-  console.info(`[quyosh-tizimi] ${Math.round(fps)} fps — sifat "${QUALITY.tier}" darajasiga tushirildi`);
+  console.info(`[solar-system] ${Math.round(fps)} fps — quality lowered to "${QUALITY.tier}"`);
 }
 
 /* ------------------------------------------------------------------ */
-/*  Asosiy halqa                                                       */
+/*  Main loop                                                          */
 /* ------------------------------------------------------------------ */
 const sunPos = new THREE.Vector3(0, 0, 0);
 
@@ -477,9 +537,9 @@ function animate() {
   watchFps(dt);
 }
 
-// Brauzer konsolidan sozlash uchun: __solar.bloom.strength = 0.4 va h.k.
+// For tinkering from the browser console: __solar.bloom.strength = 0.4 etc.
 window.__solar = {
-  THREE, scene, camera, controls, renderer, QUALITY,
+  THREE, scene, camera, controls, renderer, QUALITY, I18N,
   get composer() { return composer; },
   get bloom() { return bloom; },
   get bodies() { return system?.bodies; },
@@ -487,6 +547,7 @@ window.__solar = {
 
 build().catch((err) => {
   console.error(err);
-  document.getElementById('loader-status').textContent = 'Xatolik: ' + err.message;
+  document.getElementById('loader-status').textContent =
+    I18N.t('loaderError', { message: err.message });
 });
 animate();

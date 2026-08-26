@@ -1,6 +1,6 @@
-// Seed bilan ishlaydigan PRNG va gorizontal bo'yicha "tileable" (chok ko'rinmaydigan)
-// value-noise. Sayyora teksturalari shu yerdan generatsiya qilinadi — hech qanday
-// tashqi rasm fayli kerak emas.
+// A seeded PRNG and value noise that tiles horizontally (no visible seam).
+// Every planet texture is generated from this - the project ships no image
+// files at all.
 
 export function mulberry32(seed) {
   let a = seed >>> 0;
@@ -14,7 +14,7 @@ export function mulberry32(seed) {
 
 const fade = (t) => t * t * t * (t * (t * 6 - 15) + 10);
 
-// gw kengligi bo'yicha davriy (x o'qida o'raladi), gh balandligi bo'yicha qirqiladi.
+// Periodic across gw (wraps on the x axis), clamped across gh.
 function makeNoise(seed, gw, gh) {
   const rnd = mulberry32(seed);
   const g = new Float32Array(gw * gh);
@@ -42,8 +42,8 @@ function makeNoise(seed, gw, gh) {
   };
 }
 
-// Bir nechta oktavali fbm. Qaytgan funksiya (u, v) ni [0..1] oralig'ida oladi,
-// u bo'yicha to'liq davriy — shar sirtida chok chiqmaydi.
+// Multi-octave fbm. The returned function takes (u, v) in [0..1] and is fully
+// periodic in u, so a sphere shows no seam.
 export function makeFbm(seed, baseW, baseH, octaves = 5, gain = 0.5) {
   const layers = [];
   let w = baseW;
@@ -69,7 +69,7 @@ export function makeFbm(seed, baseW, baseH, octaves = 5, gain = 0.5) {
   };
 }
 
-// Qirrali (ridged) variant — krater gardishlari va tog' tizmalari uchun.
+// Ridged variant - for crater rims and mountain ridges.
 export function ridged(fbm) {
   return (u, v) => 1 - Math.abs(fbm(u, v) * 2 - 1);
 }
@@ -81,7 +81,7 @@ export const smoothstep = (e0, e1, x) => {
   return t * t * (3 - 2 * t);
 };
 
-// [pozitsiya, [r,g,b]] ko'rinishidagi to'xtash nuqtalari bo'yicha rang oladi.
+// Samples a colour from stops shaped as [position, [r, g, b]].
 export function ramp(stops, t) {
   t = clamp01(t);
   for (let i = 0; i < stops.length - 1; i++) {

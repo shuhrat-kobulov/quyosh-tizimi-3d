@@ -1,11 +1,11 @@
-// Fon: miltillovchi yulduzlar, uzoq tumanliklar va asteroidlar kamari.
+// Backdrop: twinkling stars, distant nebulae and the asteroid belt.
 import * as THREE from 'three';
 import { makeStarSprite, makeGlowSprite } from '../utils/textures.js';
 import { mulberry32 } from '../utils/noise.js';
 import { BELT, TIME_RATE } from '../data/planets.js';
 
 /* ------------------------------------------------------------------ */
-/*  Yulduzlar                                                          */
+/*  Stars                                                              */
 /* ------------------------------------------------------------------ */
 export function createStarfield(count = 6500, pixelRatio = 1) {
   const rnd = mulberry32(777);
@@ -14,7 +14,7 @@ export function createStarfield(count = 6500, pixelRatio = 1) {
   const size = new Float32Array(count);
   const phase = new Float32Array(count);
 
-  // Yulduz sinflari: ko'k-oq, oq, sariq, to'q sariq, qizil
+  // Stellar classes: blue-white, white, yellow, orange, red
   const palette = [
     [0.70, 0.80, 1.00],
     [0.90, 0.94, 1.00],
@@ -25,7 +25,7 @@ export function createStarfield(count = 6500, pixelRatio = 1) {
 
   const c = new THREE.Color();
   for (let i = 0; i < count; i++) {
-    // Sferada tekis taqsimot; 20% yulduz "Somon yo'li" yo'lagida zichroq
+    // Even distribution over a sphere, with a denser Milky Way band
     const inBand = rnd() < 0.28;
     const u = rnd() * 2 - 1;
     const theta = rnd() * Math.PI * 2;
@@ -97,13 +97,13 @@ export function createStarfield(count = 6500, pixelRatio = 1) {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Uzoq tumanliklar — chuqurlik hissi uchun                           */
+/*  Distant nebulae - they give the scene depth                        */
 /* ------------------------------------------------------------------ */
 export function createNebulae() {
   const group = new THREE.Group();
   const rnd = mulberry32(31);
 
-  // Har bir tumanlik uchun to'liq gradient — markazi rangli, cheti shaffof
+  // A full gradient per nebula: coloured at the centre, transparent at the rim
   const tints = [
     [[0.0, 'rgba(122,86,214,0.55)'], [0.35, 'rgba(74,52,150,0.20)'], [1.0, 'rgba(30,16,70,0)']],
     [[0.0, 'rgba(56,120,220,0.50)'], [0.35, 'rgba(30,70,150,0.18)'], [1.0, 'rgba(8,26,70,0)']],
@@ -135,14 +135,14 @@ export function createNebulae() {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Asteroidlar kamari (Mars va Yupiter orasida)                       */
+/*  Asteroid belt (between Mars and Jupiter)                           */
 /* ------------------------------------------------------------------ */
 export function createAsteroidBelt(countOverride) {
   const { inner, outer } = BELT;
   const count = countOverride ?? BELT.count;
   const rnd = mulberry32(20260826);
 
-  // Bitta bazaviy tosh: uchlarini biroz buzib, tabiiy shakl beramiz
+  // One base rock: its vertices are jittered to give a natural shape
   const geo = new THREE.IcosahedronGeometry(1, 1);
   const p = geo.attributes.position;
   for (let i = 0; i < p.count; i++) {
@@ -170,7 +170,7 @@ export function createAsteroidBelt(countOverride) {
   const color = new THREE.Color();
 
   for (let i = 0; i < count; i++) {
-    // Kamar markazida zichroq bo'lishi uchun ikkita tasodifni o'rtachalaymiz
+    // Averaging two random values packs the belt denser toward its middle
     const t = (rnd() + rnd()) * 0.5;
     const radius = inner + t * (outer - inner);
     const s = 0.1 + Math.pow(rnd(), 2.4) * 0.62;
@@ -178,8 +178,8 @@ export function createAsteroidBelt(countOverride) {
     rocks[i] = {
       radius,
       angle: rnd() * Math.PI * 2,
-      // Kepler qonuni ruhida: ichkaridagilar tezroq aylanadi.
-      // Tezlik Mars bilan Yupiter orasida — sayyoralar bilan bir birlikda.
+      // In the spirit of Kepler's law: inner rocks orbit faster. The speed is
+      // in the same unit as the planets use.
       speed: 0.42 * Math.pow(84 / radius, 1.5) * (0.9 + rnd() * 0.2) * Math.PI * 2,
       y: (rnd() - 0.5) * 3.4 * (0.4 + rnd()),
       scale: scl.set(s * (0.7 + rnd() * 0.7), s * (0.7 + rnd() * 0.7), s * (0.7 + rnd() * 0.7)).clone(),

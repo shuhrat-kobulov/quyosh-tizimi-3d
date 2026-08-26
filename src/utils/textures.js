@@ -1,14 +1,14 @@
-// Barcha teksturalar shu yerda kod bilan chiziladi (canvas + fbm shovqin).
-// Loyihada birorta ham tashqi rasm fayli ishlatilmaydi.
+// Every texture is drawn here in code (canvas plus fbm noise). The project
+// uses no external image files at all.
 import * as THREE from 'three';
 import { makeFbm, ridged, ramp, clamp01, lerp, smoothstep } from './noise.js';
 
 let ANISO = 8;
 export function setAnisotropy(v) { ANISO = v; }
 
-// Tekstura o'lchami qurilma darajasiga qarab kichraytiriladi (utils/quality.js).
-// fbm shovqin har bir piksel uchun hisoblanadi — o'lchamni yarmiga tushirish
-// yuklash vaqtini ham, video xotirani ham ~4 barobar kamaytiradi.
+// Texture size scales down with the device tier (utils/quality.js). fbm noise
+// is evaluated per pixel, so halving the size cuts both load time and video
+// memory by roughly 4x.
 let TEX_SCALE = 1;
 export function setTextureScale(s) { TEX_SCALE = s; }
 const res = (n) => Math.max(64, Math.round((n * TEX_SCALE) / 2) * 2);
@@ -29,14 +29,14 @@ function toTexture(canvas, { srgb = true } = {}) {
   return t;
 }
 
-// u o'qi bo'ylab eng qisqa masofa (tekstura o'ralishini hisobga oladi).
+// Shortest distance along the u axis, accounting for the texture wrapping.
 function du(a, b) {
   let d = Math.abs(a - b);
   return d > 0.5 ? 1 - d : d;
 }
 
 /* ------------------------------------------------------------------ */
-/*  Toshli sayyoralar: Merkuriy, Venera, Mars                          */
+/*  Rocky planets: Mercury, Venus, Mars                                */
 /* ------------------------------------------------------------------ */
 export function makeRockyTexture({
   seed, w = 512, h = 256, stops,
@@ -68,7 +68,7 @@ export function makeRockyTexture({
 
       let [cr, cg, cb] = ramp(stops, e);
 
-      // Qutb qalpoqchalari — chegarasi shovqin bilan buzilgan
+      // Polar caps - their edge is broken up with noise
       if (poles > 0) {
         const edge = poles + (poleN(u, v) - 0.5) * 0.18;
         const k = smoothstep(1 - edge, 1 - edge + 0.06, latAbs);
@@ -91,7 +91,7 @@ export function makeRockyTexture({
 }
 
 /* ------------------------------------------------------------------ */
-/*  Gaz gigantlari: Yupiter, Saturn, Uran, Neptun                      */
+/*  Gas giants: Jupiter, Saturn, Uranus, Neptune                       */
 /* ------------------------------------------------------------------ */
 export function makeGasTexture({
   seed, w = 1024, h = 512, stops,
@@ -102,8 +102,8 @@ export function makeGasTexture({
   const ctx = cv.getContext('2d');
   const img = ctx.createImageData(w, h);
 
-  const warpN = makeFbm(seed, 5, 9, 4);          // kenglikni buzuvchi turbulentlik
-  const detailN = makeFbm(seed + 401, 14, 26, 4); // mayda oqim tolalari
+  const warpN = makeFbm(seed, 5, 9, 4);          // turbulence that distorts latitude
+  const detailN = makeFbm(seed + 401, 14, 26, 4); // fine flow filaments
   const swirlN = makeFbm(seed + 733, 3, 6, 3);
   const spotN = makeFbm(seed + 191, 8, 8, 3);
 
@@ -116,13 +116,13 @@ export function makeGasTexture({
 
       let [cr, cg, cb] = ramp(stops, vv);
 
-      // Zonal chiziqlar + mayda detallar
+      // Zonal bands plus fine detail
       const stripe = Math.sin(vv * bandFreq * Math.PI * 2) * 0.5 + 0.5;
       const d = detailN(uu, vv);
       const k = 1 + (stripe - 0.5) * contrast + (d - 0.5) * contrast * 1.35;
       cr *= k; cg *= k; cb *= k;
 
-      // Katta dog' (masalan Yupiterning Qizil Dog'i)
+      // A large spot (Jupiter's Great Red Spot, for instance)
       if (spot) {
         const ddu = du(uu, spot.u) / spot.rx;
         const ddv = (vv - spot.v) / spot.ry;
@@ -149,7 +149,7 @@ export function makeGasTexture({
 }
 
 /* ------------------------------------------------------------------ */
-/*  Yer: okean, qit'alar, cho'llar, muz qalpoqlari va bulutlar          */
+/*  Earth: ocean, continents, deserts, ice caps and clouds             */
 /* ------------------------------------------------------------------ */
 export function makeEarthTextures(w = 1024, h = 512) {
   w = res(w); h = res(h);
@@ -163,8 +163,8 @@ export function makeEarthTextures(w = 1024, h = 512) {
   const bimg = bctx.createImageData(w, h);
   const rimg = rctx.createImageData(w, h);
 
-  const shape = makeFbm(20260826, 3, 2, 4);   // qit'alarning umumiy shakli
-  const relief = makeFbm(778, 9, 5, 6);        // relyef
+  const shape = makeFbm(20260826, 3, 2, 4);   // overall shape of the continents
+  const relief = makeFbm(778, 9, 5, 6);        // relief
   const iceN = makeFbm(4242, 7, 4, 3);
 
   const deep = [5, 20, 62], shallow = [26, 92, 156];
@@ -192,18 +192,18 @@ export function makeEarthTextures(w = 1024, h = 512) {
         cg = lerp(deep[1], shallow[1], t);
         cb = lerp(deep[2], shallow[2], t);
         elev = 0.34;
-        rough = 0.22; // suv sirti silliq — Quyosh unda aks etadi
+        rough = 0.22; // water is smooth - the Sun reflects off it
       } else {
         const e = (cont - 0.5) / 0.5;
         [cr, cg, cb] = ramp(land, e);
-        // Cho'l mintaqalari (~30° kenglik)
+        // Desert bands (around 30 degrees latitude)
         const desert = Math.exp(-Math.pow((latAbs - 0.34) / 0.11, 2)) * 0.72;
         cr = lerp(cr, sand[0], desert); cg = lerp(cg, sand[1], desert); cb = lerp(cb, sand[2], desert);
         elev = 0.45 + e * 0.55;
         rough = 0.9;
       }
 
-      // Muz qalpoqlari
+      // Ice caps
       const ice = smoothstep(0.7, 0.86, latAbs + (iceN(u, v) - 0.5) * 0.14);
       cr = lerp(cr, snow[0], ice); cg = lerp(cg, snow[1], ice); cb = lerp(cb, snow[2], ice);
       rough = lerp(rough, 0.6, ice);
@@ -225,7 +225,7 @@ export function makeEarthTextures(w = 1024, h = 512) {
     map: toTexture(colorCv),
     bump: toTexture(bumpCv, { srgb: false }),
     rough: toTexture(roughCv, { srgb: false }),
-    clouds: makeCloudTexture(w, h, true), // w/h allaqachon miqyoslangan
+    clouds: makeCloudTexture(w, h, true), // w/h are already scaled
   };
 }
 
@@ -239,7 +239,7 @@ export function makeCloudTexture(w = 1024, h = 512, sized = false) {
   for (let y = 0; y < h; y++) {
     const v = y / (h - 1);
     const latAbs = Math.abs(v * 2 - 1);
-    // Ekvator va ~60° kenglikda bulut ko'p, tropiklarda kam
+    // Cloudy at the equator and around 60 degrees, clearer in the tropics
     const belt = 0.55
       + 0.45 * Math.exp(-Math.pow(latAbs / 0.16, 2))
       + 0.4 * Math.exp(-Math.pow((latAbs - 0.62) / 0.18, 2))
@@ -259,7 +259,7 @@ export function makeCloudTexture(w = 1024, h = 512, sized = false) {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Saturn halqasi — radius bo'ylab 1D chiziq                          */
+/*  Saturn's ring - a 1D strip along the radius                        */
 /* ------------------------------------------------------------------ */
 export function makeRingTexture(w = 1024) {
   w = res(w);
@@ -269,7 +269,7 @@ export function makeRingTexture(w = 1024) {
   const img = ctx.createImageData(w, h);
   const n = makeFbm(31337, 64, 1, 5, 0.6);
 
-  // Zichlik pasayadigan bo'shliqlar (Kassini bo'linmasi va boshqalar)
+  // Gaps where density drops (the Cassini division and others)
   const gaps = [
     [0.00, 0.06], [0.03, 0.02], [0.46, 0.035], [0.52, 0.012], [0.74, 0.02], [0.985, 0.05],
   ];
@@ -300,7 +300,7 @@ export function makeRingTexture(w = 1024) {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Sprayt teksturalari: yulduz nuqtasi va Quyosh nuri                 */
+/*  Sprite textures: the star point and the Sun's glow                 */
 /* ------------------------------------------------------------------ */
 export function makeStarSprite(size = 64) {
   const cv = newCanvas(size, size);

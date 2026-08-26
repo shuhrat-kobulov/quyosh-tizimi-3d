@@ -1,7 +1,7 @@
 {
   "name": "quyosh-tizimi-3d",
   "version": "1.0.0",
-  "description": "Three.js bilan qurilgan interaktiv 3D Quyosh tizimi",
+  "description": "An interactive 3D solar system built with Three.js, in Uzbek, Russian and English",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -10,12 +10,14 @@
   "keywords": [
     "three.js",
     "webgl",
-    "quyosh tizimi",
-    "sayyoralar",
-    "astronomiya",
+    "solar system",
+    "planets",
+    "astronomy",
     "3d",
-    "ta'lim",
-    "o'zbek"
+    "education",
+    "i18n",
+    "uzbek",
+    "russian"
   ],
   "author": "Shukhratbek Qobulov",
   "license": "MIT",
