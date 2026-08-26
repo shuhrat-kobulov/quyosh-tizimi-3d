@@ -172,10 +172,19 @@ let following = false;
 
 const easeInOut = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 
+// Sayyoradan sayyoraga uchganda butun ko'rish maydoni siljiydi — vestibulyar
+// sezgirligi bor odamda bu ko'ngil aynishiga olib keladi. Tizim sozlamasida
+// "harakatni kamaytirish" yoqilgan bo'lsa, kamera uchmay, darrov joyiga
+// o'tadi. Sayyoralarning aylanishiga tegilmaydi — u bezak emas, mazmun.
+// `matches` har safar o'qiladi: foydalanuvchi sozlamani yo'lakay o'zgartirsa
+// ham sahifani yangilash shart bo'lmasin.
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+
 function startTransition(dur) {
   trans.active = true;
   trans.t = 0;
-  trans.dur = dur;
+  // Nol emas, juda kichik son: updateCamera da 0/0 = NaN bo'lib qolmasin.
+  trans.dur = reduceMotion.matches ? 0.001 : dur;
   // Kadrlar tezligiga emas, real vaqtga bog'laymiz — sekin qurilmada ham
   // o'tish o'zi belgilangan sekundlarda tugaydi.
   trans.start = timer.getElapsed();
@@ -334,6 +343,15 @@ speedEl.addEventListener('input', () => {
   speedVal.textContent = `${timeScale.toFixed(1)}×`;
 });
 
+// Telefonda ma'lumot paneli boshqaruv panelining ustiga qo'yiladi. Tugmalar
+// qatori ekran eniga qarab bir necha qatorga o'raladi, shuning uchun uning
+// balandligini o'lchab CSS ga beramiz (style.css dagi `--controls-h`).
+const controlsEl = document.getElementById('controls');
+new ResizeObserver(([entry]) => {
+  const h = entry.borderBoxSize?.[0]?.blockSize ?? entry.contentRect.height;
+  document.documentElement.style.setProperty('--controls-h', `${Math.round(h)}px`);
+}).observe(controlsEl);
+
 const btnOrbits = document.getElementById('btn-orbits');
 const btnLabels = document.getElementById('btn-labels');
 const btnPause = document.getElementById('btn-pause');
@@ -364,7 +382,21 @@ document.getElementById('panel-close').addEventListener('click', () => goOvervie
 
 window.addEventListener('keydown', (e) => {
   if (!system) return;
-  if (e.code === 'Space') { e.preventDefault(); togglePause(); return; }
+  // Fokus slayderda yoki matn maydonida bo'lsa, tezkor tugmalarga umuman
+  // tegmaymiz — o'q tugmalari o'sha yerda ishlashi kerak.
+  if (e.target?.closest?.('input, select, textarea')) return;
+
+  // "Bo'sh joy" fokusdagi tugmani bosadi. Shuning uchun fokus tugmada turganda
+  // uni pauzaga o'g'irlamaymiz, aks holda klaviatura bilan yuruvchi odam
+  // tugmani umuman bosa olmaydi. Raqam va harf tugmalari esa tugma bilan
+  // to'qnashmaydi — sichqoncha bilan tugma bosilgandan keyin ham (fokus o'sha
+  // tugmada qoladi) `1`…`8`, `Q`, `O`, `L`, `Esc` ishlayverishi kerak.
+  if (e.code === 'Space') {
+    if (e.target?.closest?.('button, a[href]')) return;
+    e.preventDefault();
+    togglePause();
+    return;
+  }
   if (e.key === 'Escape' || e.key === '0') { goOverview(); return; }
   if (e.key.toLowerCase() === 'o') { toggleOrbits(); return; }
   if (e.key.toLowerCase() === 'l') { toggleLabels(); return; }

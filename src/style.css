@@ -58,7 +58,10 @@ html, body {
 #topbar {
   position: fixed; top: 0; left: 0; right: 0; z-index: 20;
   display: flex; align-items: center; justify-content: space-between;
-  padding: 18px 22px; pointer-events: none;
+  padding: 18px 22px;
+  padding-left: max(22px, env(safe-area-inset-left));
+  padding-right: max(22px, env(safe-area-inset-right));
+  pointer-events: none;
 }
 .brand { display: flex; align-items: center; gap: 12px; }
 .brand .dot {
@@ -115,9 +118,22 @@ html, body {
 .panel-note span { font-size: 10px; letter-spacing: .22em; color: var(--accent); }
 .panel-note p { margin: 8px 0 0; font-size: 12.5px; line-height: 1.65; color: #d8e0fb; }
 
+/* Manba havolasi. `hidden` atributi ishlashi uchun display'ni qaytarib
+   o'chiramiz — aks holda `display: block` uni yengib, yashirilmay qoladi. */
+.panel-source {
+  display: block; margin-top: 12px; padding: 9px; text-align: center;
+  font-size: 11px; letter-spacing: .06em; color: var(--muted);
+  text-decoration: none; border-radius: 8px; border: 1px solid var(--stroke);
+  transition: color .2s, border-color .2s, background .2s;
+}
+.panel-source:hover { color: var(--accent-2); border-color: rgba(110,168,255,.45); background: rgba(110,168,255,.08); }
+.panel-source[hidden] { display: none; }
+
 /* ---------- Boshqaruv ---------- */
 #controls {
-  position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 25;
+  position: fixed; left: 50%; z-index: 25;
+  bottom: calc(20px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
   display: grid; gap: 10px; justify-items: center; width: min(940px, calc(100vw - 32px));
 }
 .row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
@@ -150,8 +166,19 @@ html, body {
 
 @media (max-width: 820px) {
   .hint { display: none; }
-  #panel { top: auto; bottom: 178px; right: 12px; left: 12px; width: auto; max-height: 42vh; }
-  .planets .pbtn { padding: 6px 10px 6px 7px; font-size: 10.5px; }
+  .planets .pbtn { padding: 8px 12px 8px 9px; font-size: 10.5px; min-height: 38px; }
+
+  /* Boshqaruv paneli 9 ta tugmani necha qatorga o'rashiga qarab balandligi
+     o'zgaradi, shuning uchun 178px kabi qat'iy son ishonchsiz: tor ekranda
+     panel tugmalar ustiga tushib qolardi. Haqiqiy balandlikni main.js
+     o'lchab `--controls-h` ga yozadi, bu yerda esa shunga tayanamiz. */
+  #panel {
+    top: auto; right: 12px; left: 12px; width: auto;
+    bottom: calc(var(--controls-h, 158px) + 20px + env(safe-area-inset-bottom));
+    max-height: calc(100vh - var(--controls-h, 158px) - 150px);
+    max-height: calc(100dvh - var(--controls-h, 158px) - 150px);
+  }
+  #panel-close { top: 6px; right: 8px; padding: 10px; }
 
   /* Tezlik telefonda ham kerak — qatorni o'rab, slayderni butun enga yoyamiz */
   .row.tools { flex-wrap: wrap; justify-content: center; row-gap: 8px; }
@@ -159,5 +186,31 @@ html, body {
   #speed { flex: 1; max-width: 220px; height: 4px; }
   #speed::-webkit-slider-thumb { width: 18px; height: 18px; }
   #speed::-moz-range-thumb { width: 18px; height: 18px; }
-  .tool { padding: 7px 11px; }
+  .tool { padding: 9px 12px; min-height: 38px; }
+}
+
+/* ---------- Klaviatura bilan yurish ---------- */
+/* Qorong'i fonda brauzerning standart konturi ko'rinmaydi — o'zimiznikini
+   qo'yamiz. `:focus-visible` sichqoncha bilan bosilganda chiqmaydi. */
+:focus-visible {
+  outline: 2px solid var(--accent-2);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+button, a, .label { -webkit-tap-highlight-color: transparent; }
+
+/* ---------- Harakatni kamaytirish ---------- */
+/* Kamera sayyoradan sayyoraga uchganda ko'rish maydoni butunlay siljiydi —
+   vestibulyar sezgirligi bor odamda bu ko'ngil aynishiga sabab bo'ladi.
+   Tizim sozlamasida "harakatni kamaytirish" yoqilgan bo'lsa, interfeys
+   animatsiyalari o'chadi; kameraning uchishini esa main.js qisqartiradi.
+   Sayyoralarning aylanishi o'chirilmaydi — u bezak emas, mazmunning o'zi. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .planets .pbtn:hover { transform: none; }
 }

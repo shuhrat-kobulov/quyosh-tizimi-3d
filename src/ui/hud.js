@@ -24,6 +24,17 @@ export function showPanel(info) {
     dl.append(row);
   }
 
+  // Manba havolasi: raqamlar qayerdan olinganini ko'rsatadi. Yo'ldoshlar
+  // uchun `source` bo'lmasligi mumkin — u holda havola yashiriladi.
+  const src = $('panel-source');
+  if (info.source) {
+    src.href = info.source;
+    src.hidden = false;
+  } else {
+    src.removeAttribute('href');
+    src.hidden = true;
+  }
+
   $('panel').classList.remove('hidden');
 }
 

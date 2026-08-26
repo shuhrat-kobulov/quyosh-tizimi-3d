@@ -2,7 +2,7 @@
 <html lang="uz">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Quyosh Tizimi — 3D Sayohat</title>
   <meta name="description" content="Interaktiv 3D Quyosh tizimi: sayyorani bosing — kamera uning yoniga uchib boradi, panelda esa u haqidagi ma'lumotlar chiqadi. O'zbek tilida, brauzerda ishlaydi, hech narsa o'rnatish shart emas." />
   <meta name="author" content="Shuhrat Kobulov" />
@@ -62,7 +62,7 @@
   </header>
 
   <!-- Ma'lumot paneli -->
-  <aside id="panel" class="hidden">
+  <aside id="panel" class="hidden" aria-live="polite" aria-label="Tanlangan jism haqida ma'lumot">
     <button id="panel-close" aria-label="Yopish">&times;</button>
     <div class="panel-head">
       <span id="panel-kind">SAYYORA</span>
@@ -74,6 +74,9 @@
       <span>Qiziqarli fakt</span>
       <p id="panel-fact">—</p>
     </div>
+    <a id="panel-source" class="panel-source" target="_blank" rel="noopener noreferrer" hidden>
+      Manba: NASA ma'lumot sahifasi ↗
+    </a>
   </aside>
 
   <!-- Boshqaruv paneli -->

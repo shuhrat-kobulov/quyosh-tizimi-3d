@@ -3,9 +3,10 @@
 Three.js asosida qurilgan interaktiv Quyosh tizimi. Sayyorani bosasiz — kamera
 uning yoniga uchib boradi, panelda esa u haqidagi ma'lumotlar chiqadi.
 
-**Onlayn ko'rish:** https://shuhrat.github.io/quyosh-tizimi-3d
-*(deploy qilgandan keyin bu manzilni va `.env` faylidagi `VITE_SITE_URL` ni
-o'zingiznikiga o'zgartiring — ijtimoiy tarmoqlardagi ko'rinish shunga bog'liq)*
+**Onlayn ko'rish:** https://shuhrat-kobulov.github.io/quyosh-tizimi-3d
+*(Loyihani fork qilsangiz, `.env` faylidagi `VITE_SITE_URL` ni va yuqoridagi
+manzilni o'zingiznikiga almashtiring — ijtimoiy tarmoqlarda havola qanday
+ko'rinishi shunga bog'liq.)*
 
 **Loyihada birorta ham tashqi rasm fayli yo'q.** Barcha sayyora teksturalari,
 Saturn halqasi, yulduzlar va tumanliklar dastur ishga tushganda `canvas` va
@@ -79,6 +80,29 @@ O'qituvchi darsda "mana shu havolani oching" deb bitta sayyorani ko'rsata oladi.
 Pastdagi "Tezlik" slayderi 0× dan 10× gacha. **1.0× tezlikda Yerning bir yili
 taxminan 45 soniya** davom etadi — qolgan hamma sayyoralar shunga nisbatan
 haqiqiy tezlik nisbatida harakatlanadi.
+
+### Ma'lumot manbalari
+
+Har bir sayyora panelining pastida **"Manba: NASA ma'lumot sahifasi"** havolasi
+turadi — paneldagi raqamlar o'sha sahifalardagi qiymatlarga tayanadi. Dars
+paytida savol tugʻilsa, o'qituvchi manbani darrov ocha oladi.
+
+Manzillar `src/data/planets.js` dagi `NASA` obyektida yigʻilgan. Ular bir
+qolipda emas (`/facts/` va `/venus-facts/` aralash), shuning uchun qo'lda
+yozilgan. NASA sahifalarni ko'chirsa, tuzatadigan joy — shu bitta obyekt.
+
+### Maxsus ehtiyojlar
+
+- Qurilma sozlamasida **"harakatni kamaytirish"** yoqilgan bo'lsa (iOS: Settings
+  → Accessibility → Motion, Windows/macOS da ham bor), kamera sayyoradan
+  sayyoraga uchmaydi — darrov joyiga o'tadi. Katta ko'lamli kamera harakati
+  vestibulyar sezgirligi bor odamda ko'ngil aynishiga sabab bo'ladi.
+  Sayyoralarning aylanishi o'chirilmaydi — u bezak emas, mavzuning o'zi.
+- Sahifani barmoq bilan kattalashtirish mumkin (`maximum-scale` cheklovi yo'q).
+- Klaviatura bilan yurganda fokus konturi ko'rinadi; fokus tugmada turganda
+  `Bo'sh joy` o'sha tugmani bosadi, pauzani emas.
+- Panel `aria-live` bilan belgilangan — sayyora almashganda ekran o'quvchi
+  yangi ma'lumotni o'qib beradi.
 
 ## Fayllar
 

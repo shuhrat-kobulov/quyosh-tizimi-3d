@@ -8,6 +8,26 @@ export const SUN_RADIUS = 12;
 // haqiqiy soniyalarga bog'laydi: 1.0x tezlikda Yerning bir yili ~45 soniya.
 export const TIME_RATE = 1 / 45;
 
+// Paneldagi raqamlar NASA ning ochiq ma'lumot sahifalariga tayanadi. Har bir
+// jism paneliga o'sha sahifaga havola chiqadi — o'qituvchi darsda manbani
+// ko'rsata olishi uchun.
+//
+// Manzillar bir qolipda emas (ba'zisi `/facts/`, ba'zisi `/venus-facts/`),
+// shuning uchun ular qo'lda yozilgan. Eski `nssdc.gsfc.nasa.gov/planetary/
+// factsheet/` sahifalari endi ishlamaydi: ular umumiy NSSDC sahifasiga
+// yo'naltiriladi, ya'ni o'quvchi kerakli raqamlarni topa olmaydi.
+const NASA = {
+  sun: 'https://science.nasa.gov/sun/facts/',
+  mercury: 'https://science.nasa.gov/mercury/facts/',
+  venus: 'https://science.nasa.gov/venus/venus-facts/',
+  earth: 'https://science.nasa.gov/earth/facts/',
+  mars: 'https://science.nasa.gov/mars/facts/',
+  jupiter: 'https://science.nasa.gov/jupiter/jupiter-facts/',
+  saturn: 'https://science.nasa.gov/saturn/facts/',
+  uranus: 'https://science.nasa.gov/uranus/facts/',
+  neptune: 'https://science.nasa.gov/neptune/neptune-facts/',
+};
+
 export const SUN = {
   key: 'quyosh',
   name: 'Quyosh',
@@ -25,6 +45,7 @@ export const SUN = {
   ],
   fact:
     "Har soniyada 600 million tonna vodorodni geliyga aylantiradi. Undan chiqqan yorug'lik Yergacha 8 daqiqa 20 soniyada yetib keladi.",
+  source: NASA.sun,
 };
 
 export const PLANETS = [
@@ -65,6 +86,7 @@ export const PLANETS = [
     ],
     fact:
       "Atmosfera issiqlikni ushlab tura olmaydi: kunduzi sirt qo'rg'oshinni eritadigan darajada qiziydi, kechasi esa −170 °C gacha muzlaydi.",
+    source: NASA.mercury,
   },
   {
     key: 'venera',
@@ -105,6 +127,7 @@ export const PLANETS = [
     ],
     fact:
       "O'z o'qi atrofida teskari yo'nalishda aylanadi — Venerada Quyosh g'arbdan chiqib, sharqda botadi. Bir sutkasi bir yilidan uzun.",
+    source: NASA.venus,
   },
   {
     key: 'yer',
@@ -135,6 +158,7 @@ export const PLANETS = [
     ],
     fact:
       "O'q qiyaligi 23.4° — fasllar aynan shundan. Oy bu qiyalikni barqaror ushlab turadi, aks holda iqlim asrlar davomida keskin o'zgarib turardi.",
+    source: NASA.earth,
   },
   {
     key: 'mars',
@@ -180,6 +204,7 @@ export const PLANETS = [
     ],
     fact:
       "Quyosh tizimidagi eng baland tog' — Olimp vulqoni shu yerda: balandligi 21 km, ya'ni Everestdan qariyb 2.5 barobar baland.",
+    source: NASA.mars,
   },
   {
     key: 'yupiter',
@@ -232,6 +257,7 @@ export const PLANETS = [
     ],
     fact:
       "Katta Qizil Dog' — kamida 350 yildan beri to'xtamayotgan bo'ron. Uning ichiga butun Yer bemalol sig'adi.",
+    source: NASA.jupiter,
   },
   {
     key: 'saturn',
@@ -280,6 +306,7 @@ export const PLANETS = [
     ],
     fact:
       "Zichligi suvnikidan kam. Agar shunchalik katta okean topilsa, Saturn unda cho'kmasdan suzib yurardi.",
+    source: NASA.saturn,
   },
   {
     key: 'uran',
@@ -322,6 +349,7 @@ export const PLANETS = [
     ],
     fact:
       "Deyarli yotgan holda aylanadi — qutblari navbat bilan 42 yil yorug'likda, keyin 42 yil zulmatda qoladi. Tizimdagi eng past harorat ham shu yerda qayd etilgan.",
+    source: NASA.uranus,
   },
   {
     key: 'neptun',
@@ -368,6 +396,7 @@ export const PLANETS = [
     ],
     fact:
       "Shamol tezligi 2 100 km/soatgacha yetadi — tizimdagi eng kuchli bo'ronlar. Neptun teleskopda emas, avval qog'ozda — matematik hisob-kitob orqali topilgan.",
+    source: NASA.neptune,
   },
 ];
 
