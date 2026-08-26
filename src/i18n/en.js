@@ -40,6 +40,8 @@ export default {
     btnPauseTitle: 'Pause time (Space)',
     speedLabel: 'Speed',
 
+    offlineReady: 'Ready — this page now opens without an internet connection.',
+
     errNoWebglTitle: 'Your browser does not support 3D',
     errNoWebglText:
       'This page needs WebGL. Open it in a recent version of Chrome, Safari or Firefox, or turn on hardware acceleration in your browser settings.',

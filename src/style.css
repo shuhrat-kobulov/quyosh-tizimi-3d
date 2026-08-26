@@ -213,6 +213,29 @@ html, body {
   .lang-btn { padding: 7px 11px; min-height: 34px; }
 }
 
+/* ---------- Toast ---------- */
+/* Sits above the control bar on a phone, and clear of it on a desktop. It is
+   never interactive, so it must not swallow a click meant for a planet. */
+#toast {
+  position: fixed; z-index: 30;
+  left: 50%; transform: translate(-50%, 12px);
+  bottom: calc(var(--controls-h, 84px) + 26px + env(safe-area-inset-bottom));
+  max-width: min(420px, calc(100vw - 32px));
+  padding: 11px 18px;
+  background: var(--glass);
+  border: 1px solid var(--stroke);
+  border-radius: var(--radius);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  color: var(--ink);
+  font-size: 13px; line-height: 1.5; letter-spacing: .01em;
+  text-align: center;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .4s ease, transform .4s ease;
+}
+#toast.show { opacity: 1; transform: translate(-50%, 0); }
+
 /* ---------- Keyboard navigation ---------- */
 /* The browser's default focus ring is invisible on this dark background, so
    we draw our own. `:focus-visible` stays out of the way of mouse clicks. */

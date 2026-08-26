@@ -207,6 +207,24 @@ export function hideLoader() {
   $('loader').classList.add('done');
 }
 
+/* ---------------- Notices ---------------- */
+// A short message that appears once and fades out on its own. The element is
+// `role="status"`, so a screen reader reads it without stealing focus, and it
+// is never given a close button: nothing here is worth a tap.
+export function showToast(text, ms = 5000) {
+  const el = $('toast');
+  if (!el) return;
+
+  el.textContent = text;
+  el.hidden = false;
+  requestAnimationFrame(() => el.classList.add('show'));
+
+  setTimeout(() => {
+    el.classList.remove('show');
+    setTimeout(() => { el.hidden = true; }, 400);
+  }, ms);
+}
+
 /* ---------------- WebGL support and fatal errors ---------------- */
 export function hasWebGL() {
   try {

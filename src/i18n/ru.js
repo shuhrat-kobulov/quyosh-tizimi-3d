@@ -40,6 +40,8 @@ export default {
     btnPauseTitle: 'Остановить время (Пробел)',
     speedLabel: 'Скорость',
 
+    offlineReady: 'Готово — теперь страница открывается и без интернета.',
+
     errNoWebglTitle: 'Ваш браузер не поддерживает 3D',
     errNoWebglText:
       'Этой странице нужен WebGL. Откройте её в свежей версии Chrome, Safari или Firefox либо включите аппаратное ускорение в настройках браузера.',

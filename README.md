@@ -11,7 +11,11 @@ own address — link previews on social networks depend on it.)*
 
 **The project ships no image files at all.** Every planet texture, Saturn's
 ring, the stars and the nebulae are drawn in code with `canvas` and fbm noise
-when the page loads. The Sun is a live GLSL shader.
+when the page loads. The Sun is a live GLSL shader. Even the app icons are
+generated during the build rather than committed (`build/icons.js`).
+
+It installs like an app and, once opened, **runs with no internet at all** —
+see [Working offline](#working-offline).
 
 ## Running it
 
@@ -47,6 +51,53 @@ when someone shares the link. It **must** be absolute, or the link renders as
 plain text. The preview image itself is `public/og.png`.
 
 For Netlify or Vercel: build command `npm run build`, output directory `dist`.
+
+## Working offline
+
+The built site is about 210 KB gzipped and contains no image files, so a
+service worker simply keeps **all** of it. Open the page once and it keeps
+working with the network unplugged — which is the point: a classroom with an
+unreliable connection is the normal case, not the exception.
+
+The first visit ends with a one-line notice saying so, and nothing else about
+the page changes.
+
+What that buys:
+
+- **Offline.** Every asset is precached on install. Reloading with no network
+  brings up the whole scene, and shared links keep working too — the app reads
+  `?planet=` and `?lang=` from the URL, so `?planet=saturn&lang=ru` opens on
+  Saturn in Russian with the network down.
+- **Installable.** "Add to Home Screen" on a phone, or the install button in
+  the address bar on a desktop, gives it its own icon and a window with no
+  browser chrome.
+- **Instant on repeat visits.** Nothing is fetched at all.
+
+The pieces:
+
+| File | What it does |
+|---|---|
+| `src/sw.js` | The service worker. Not bundled — `build/pwa.js` fills in the hashed filenames and emits it as `dist/sw.js`. |
+| `src/utils/pwa.js` | Registration. Production only. |
+| `build/pwa.js` | Vite plugin: renders the icons, writes `sw.js`, injects the icon and manifest tags. |
+| `build/icons.js` | Draws the icons and encodes the PNGs by hand (`node:zlib`, no image library). |
+| `public/manifest.webmanifest` | Name, colours, icons, `display: standalone`. |
+
+**Updating.** Assets are content-hashed, so the cache is named after a digest
+of the build. A new deploy installs a new worker, drops the old cache whole,
+and takes over on the next navigation.
+
+**No service worker in `vite dev`** — a cache in front of the dev server would
+serve yesterday's module after every edit. Use `npm run preview` to try the
+offline behaviour: load `http://localhost:4173`, then stop the server and
+reload the page.
+
+One thing worth knowing if you fork this: cache lookups pass
+`ignoreVary: true`. Hosts send `Vary` headers (`Origin` from Vite's preview
+server, `Accept-Encoding` from GitHub Pages) that the requests made during
+install did not carry, and without that flag every asset the page loads with
+`crossorigin` — which is every asset Vite emits — misses the cache and the
+page comes up blank offline.
 
 ## Controls
 
@@ -130,16 +181,22 @@ by hand. If NASA moves the pages, that one object is the only thing to fix.
 ```
 src/
   main.js               scene, camera, post-processing, controls
+  sw.js                 service worker (emitted by build/pwa.js, not bundled)
   data/planets.js       physical data only (sizes, orbits, textures, sources)
   i18n/index.js         language detection, storage, string lookup
   i18n/{uz,ru,en}.js    all display text, one file per language
   utils/noise.js        seeded PRNG and fbm noise that tiles horizontally
+  utils/pwa.js          service worker registration (production only)
   utils/quality.js      picks how heavy the scene may be for the device
   utils/textures.js     every texture is drawn here
   objects/sun.js        the Sun: photosphere shader, corona, glow
   objects/planets.js    planets, atmospheres, rings, moons, orbit lines
   objects/space.js      stars, nebulae, asteroid belt
   ui/hud.js             panel, buttons, language switcher, projected labels
+
+build/                  build-time only, never shipped to the browser
+  pwa.js                Vite plugin: icons, service worker, head tags
+  icons.js              draws the app icons and writes the PNGs
 ```
 
 ## How it works inside

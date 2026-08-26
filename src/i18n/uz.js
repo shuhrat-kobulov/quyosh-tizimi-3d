@@ -40,6 +40,8 @@ export default {
     btnPauseTitle: "Vaqtni to'xtatish (Bo'sh joy)",
     speedLabel: 'Tezlik',
 
+    offlineReady: 'Tayyor — bu sahifa endi internetsiz ham ochiladi.',
+
     errNoWebglTitle: "Brauzeringiz 3D ni qo'llab-quvvatlamadi",
     errNoWebglText:
       "Bu sahifa WebGL texnologiyasiga muhtoj. Chrome, Safari yoki Firefox ning yangi versiyasida oching, yoki brauzer sozlamalarida grafik tezlashtirishni (hardware acceleration) yoqing.",

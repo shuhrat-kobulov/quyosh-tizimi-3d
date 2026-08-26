@@ -1,7 +1,7 @@
 {
   "name": "quyosh-tizimi-3d",
   "version": "1.0.0",
-  "description": "An interactive 3D solar system built with Three.js, in Uzbek, Russian and English",
+  "description": "An interactive 3D solar system built with Three.js, in Uzbek, Russian and English — installable and fully offline",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -17,7 +17,10 @@
     "education",
     "i18n",
     "uzbek",
-    "russian"
+    "russian",
+    "pwa",
+    "offline",
+    "service-worker"
   ],
   "author": "Shukhratbek Qobulov",
   "license": "MIT",

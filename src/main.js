@@ -13,6 +13,7 @@ import { createPlanets } from './objects/planets.js';
 import { createStarfield, createNebulae, createAsteroidBelt } from './objects/space.js';
 import * as I18N from './i18n/index.js';
 import * as HUD from './ui/hud.js';
+import { registerServiceWorker } from './utils/pwa.js';
 
 /* ------------------------------------------------------------------ */
 /*  Language                                                           */
@@ -551,3 +552,11 @@ build().catch((err) => {
     I18N.t('loaderError', { message: err.message });
 });
 animate();
+
+/* ------------------------------------------------------------------ */
+/*  Offline copy                                                       */
+/* ------------------------------------------------------------------ */
+// The site is a few hundred kilobytes with no image files, so the service
+// worker can keep all of it. Worth saying out loud the first time: a teacher
+// who opens the page once can then use it in a room with no internet.
+registerServiceWorker(() => HUD.showToast(I18N.t('offlineReady')));
