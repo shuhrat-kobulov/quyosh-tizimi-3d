@@ -1,0 +1,30 @@
+{
+  "name": "quyosh-tizimi-3d",
+  "version": "1.0.0",
+  "description": "Three.js bilan qurilgan interaktiv 3D Quyosh tizimi",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --port 4173"
+  },
+  "keywords": [
+    "three.js",
+    "webgl",
+    "quyosh tizimi",
+    "sayyoralar",
+    "astronomiya",
+    "3d",
+    "ta'lim",
+    "o'zbek"
+  ],
+  "author": "Shukhratbek Qobulov",
+  "license": "MIT",
+  "dependencies": {
+    "three": "^0.185.1"
+  },
+  "devDependencies": {
+    "vite": "^8.2.2"
+  },
+  "type": "module",
+  "homepage": "https://shuhrat.github.io/quyosh-tizimi-3d"
+}
